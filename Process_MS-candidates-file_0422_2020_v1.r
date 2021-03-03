@@ -1,83 +1,80 @@
 #Written by Cameron Wehrfritz
-#Schilling Lab, Buck Institute
-#April 22, 2020
+#March 3, 2021
 
-# VERSION 1
-# PROCESSING of sample L08 from Tlsty CRUK ECM project
-# Conditions: A_contr, B_tumor
-# OUTPUT: EXCEL File (with multiple sheets)
+# Processing Mass Spec Candidates File
+
+# OUTPUT: PROCESSED DATA TABLES
+
+####################
+### Begin Script ###
+####################
 
 
-######################
-#### Begin Program ###
-######################
-
+#------------------------------------------------------------------------------------
 #set working directory
-#setwd("/Volumes/GibsonLab/users/Cameron/2020_0422_L08_CRUK/R_workspace")
-setwd("//bigrock/GibsonLab/users/Cameron/2020_0422_L08_CRUK/R_workspace") # VPN
+# setwd("/Volumes/GibsonLab/users/Cameron/0303_2021_AC1/R_workspace") # MAC
+setwd("//bigrock/GibsonLab/users/Cameron/0303_2021_AC1/R_workspace") # PC
+#------------------------------------------------------------------------------------
 
 
-#-----------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------
 # PACKAGES #
-packages = c("plyr", "dplyr", "openxlsx", "readxl", "writexl", "reshape2", "gplots")
+packages = c("tidyr", "dplyr", "writexl", "openxlsx")
+
 package.check <- lapply(packages, FUN = function(x) {
   if (!require(x, character.only = TRUE)) {
     install.packages(x, dependencies = TRUE)
     library(x, character.only = TRUE)
   }
 })
-#-----------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------
 
 
-#-----------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------
 # LOAD DATA #
-#############
-df <- read.csv("//bigrock/GibsonLab/users/Cameron/2020_0422_L08_CRUK/Tables/Input/Candidates_PG17_L08_0328_2020_v1.tsv", sep="\t", stringsAsFactors = FALSE) # VPN
-#-----------------------------------------------------------------------------------------------------
 
-
-
-#-----------------------------------------------------------------------------------------------------
-# NOTES FOR DATA:
-#-----------------------------------------------------------------------------------------------------
+df.input <- read.csv("//bigrock/GibsonLab/users/Cameron/0303_2021_AC1/Input/AC1_0302_2021_v3_DDA_AC1_libr.tsv", sep="\t", stringsAsFactors = F) #PC
+#------------------------------------------------------------------------------------
 
 
 #-----------------------------------------------------------------------------------------------------
-#-----------------------------------------------------------------------------------------------------
-# CLEAN THE DATA #
-# For all sheets:
+# CLEAN THE DATA
 
-# keep only ratios with Normal condition ('A_N') in the denominator
-df <- subset(df, grepl("*A_contr", Condition.Denominator) )
+df <- df.input %>%
+  select(-contains("DEPRECATED")) %>% # drop DEPRECATED variables
+  select(-Valid) %>% # drop Valid variable
+  rename(Number.of.Ratios=X..of.Ratios, # rename these variables
+         Percent.Change=X..Change,
+         Number.of.Unique.Total.Peptides=X..Unique.Total.Peptides,
+         Number.of.Unique.Total.EG.Id=X..Unique.Total.EG.Id) %>%
+  select(UniProtIds, Genes, ProteinGroups, ProteinNames, ProteinDescriptions, # move these variables to the beginning
+         everything()) %>% # all other variables follow
+  arrange(Qvalue) # arrange by Qvalue, ascending
+#------------------------------------------------------------------------------------
 
 
-# Delete the following columns:
-# anything with "DEPRECATED"
-df <- df[ , !grepl("*DEPRECATED*", colnames(df))]
+#------------------------------------------------------------------------------------
+# Make Sheet #1
 
-# Order ascending based on Qvalue
-df <- arrange(df, Qvalue)
+# first set sheet name
+sheet.number <- "sheet 1"
 
-
-#########
 # ROUND
 # Round the values in the following columns to 2 decimal places:
 columns_to_round <- c("AVG.Log2.Ratio", "Absolute.AVG.Log2.Ratio", "Ratio")
 df <- df %>% 
   mutate_at(columns_to_round, round, digits = 2)
-#########
 
 
-#########
 # HIDE
 # before hiding columns (which needs to be done in the workbook itself, we must create the workbook using openxlsx):
 # Create workbook:
 wb <- createWorkbook("ECM")
-addWorksheet(wb, "Sheet 1", gridLines = TRUE)
-writeData(wb, sheet = 1, df, rowNames = FALSE)
+addWorksheet(wb, sheet.number, gridLines = TRUE)
+writeData(wb, sheet.number, df, rowNames = FALSE)
 headerStyle <- createStyle(fontSize = 14, fontColour = "#FFFFFF", halign = "center", fgFill = "#4F81BD", border="TopBottomLeftRight", borderColour = "black") #"#4F81BD")
-addStyle(wb, sheet = 1, headerStyle, rows = 1, cols = 1:length(colnames(df)), gridExpand = TRUE)
-setColWidths(wb, sheet = 1, cols=1:length(colnames(df)), widths = 10) # set all column widths to 10; more tailoring to come later
+addStyle(wb, sheet.number, headerStyle, rows = 1, cols = 1:length(colnames(df)), gridExpand = TRUE)
+setColWidths(wb, sheet.number, cols=1:length(colnames(df)), widths = 10) # set all column widths to 10; more tailoring to come later
 
 
 # Hide the following columns:
@@ -85,15 +82,13 @@ setColWidths(wb, sheet = 1, cols=1:length(colnames(df)), widths = 10) # set all 
 # "AVG.Group.Quantity.Numerator"
 # "X..Change" 
 # "Standard.Deviation"
-columns_to_hide <- c("AVG.Group.Quantity.Denominator", "AVG.Group.Quantity.Numerator", "X..of.Ratios", "X..Change", "Standard.Deviation")
+columns_to_hide <- c("AVG.Group.Quantity.Denominator", "AVG.Group.Quantity.Numerator", "Number.of.Ratios", "Percent.Change", "Standard.Deviation")
 column.hide.indeces <- which(colnames(df) %in% columns_to_hide)
 
 # hide columns:
-setColWidths(wb, "Sheet 1", cols = column.hide.indeces, widths = 8.43, hidden = TRUE, ignoreMergedCells = FALSE)
-#########
+setColWidths(wb, sheet.number, cols = column.hide.indeces, widths = 8.43, hidden = TRUE, ignoreMergedCells = FALSE)
 
 
-#########
 # WIDEN
 # Widen the following columns for better legibility:
 # "Comparison..group1.group2." # set to width of 34
@@ -112,10 +107,9 @@ columns_to_widen <- c("Comparison..group1.group2.", "Condition.Numerator", "Cond
                       "ProteinGroups", "ProteinNames", "ProteinDescriptions", "UniProtIds", "GO.Biological.Process", "GO.Molecular.Function", "GO.Cellular.Component")
 column.widen.indeces <- which(colnames(df) %in% columns_to_widen)
 setColWidths(wb, sheet = 1, cols = column.widen.indeces, widths = c(34, 24, 28, 18, 28, 16, 24, 32, 14, 50, 50, 50)) # column widths
-#########
 
 
-#########
+
 # CENTER
 # Center text:
 # columns to center:
@@ -136,62 +130,51 @@ align_center_style <- createStyle(fontName = "calibri", fontSize = 14, fontColou
                                   wrapText = FALSE, textRotation = NULL, indent = NULL, locked = NULL, hidden = NULL)
 
 # add style
-addStyle(wb, sheet = "Sheet 1", style = align_center_style, rows = 1:dim(df)[1], cols = column.center.indeces, gridExpand = TRUE, stack = TRUE)
-#########
+addStyle(wb, sheet.number, style = align_center_style, rows = 1:dim(df)[1], cols = column.center.indeces, gridExpand = TRUE, stack = TRUE)
 # END SHEET 1 #
 #-----------------------------------------------------------------------------------------------------
 
 
 
 #-----------------------------------------------------------------------------------------------------
-# BEGIN SHEET 2 #
-# B_tumor/A_contr
-# Q < 0.01
+# Make Sheet #2
 
-addWorksheet(wb, "Sheet 2", gridLines = TRUE)
-writeData(wb, sheet = "Sheet 2", df[ df$Qvalue<0.01 & grepl("*B_tumor", df$Condition.Numerator), ], rowNames = FALSE) # take only B_cancer data
+# significantly altered proteins with at least 2 unique peptides
+df.sig <- df %>%
+  filter(Qvalue<=0.01) %>%
+  filter(Absolute.AVG.Log2.Ratio>0.58) %>%
+  filter(Number.of.Unique.Total.Peptides>1) # must have at least 2 unique peptides per protein
 
-addStyle(wb, sheet = "Sheet 2", headerStyle, rows = 1, cols = 1:length(colnames(df)), gridExpand = TRUE)
-setColWidths(wb, sheet = "Sheet 2", cols=1:length(colnames(df)), widths = 10) # set all column widths to 10; more tailoring to come later
+# first set sheet name
+sheet.number <- "sheet 2"
 
-########
+addWorksheet(wb, sheet.number, gridLines = TRUE)
+writeData(wb, sheet.number, df.sig, rowNames = FALSE) # significantly altered proteins
+
+addStyle(wb, sheet.number, headerStyle, rows = 1, cols = 1:length(colnames(df)), gridExpand = TRUE)
+setColWidths(wb, sheet.number, cols=1:length(colnames(df)), widths = 10) # set all column widths to 10; more tailoring to come later
+
 # HIDE
-setColWidths(wb, "Sheet 2", cols = column.hide.indeces, widths = 8.43, hidden = TRUE, ignoreMergedCells = FALSE)
-#########
+setColWidths(wb, sheet.number, cols = column.hide.indeces, widths = 8.43, hidden = TRUE, ignoreMergedCells = FALSE)
 
-
-#########
 # WIDEN
-setColWidths(wb, sheet = "Sheet 2", cols = column.widen.indeces, widths = c(34, 24, 28, 18, 28, 16, 24, 32, 14, 50, 50, 50))
-#########
+setColWidths(wb, sheet = sheet.number, cols = column.widen.indeces, widths = c(34, 24, 28, 18, 28, 16, 24, 32, 14, 50, 50, 50))
 
-
-##########
 # CENTER
 # add style
-addStyle(wb, sheet = "Sheet 2", style = align_center_style, rows = 1:dim(df)[1], cols = column.center.indeces, gridExpand = TRUE, stack = TRUE)
-##########
+addStyle(wb, sheet = sheet.number, style = align_center_style, rows = 1:dim(df)[1], cols = column.center.indeces, gridExpand = TRUE, stack = TRUE)
+
 # END SHEET 2 #
 #-----------------------------------------------------------------------------------------------------
 
 
 #-----------------------------------------------------------------------------------------------------
 # RENAME THE SHEETS #
-names(wb) <- c("All_vs_Acontr", "Btumor_vs_Acontr Q_0.01")
+names(wb) <- c("All Proteins", "Significant Proteins")
 #-----------------------------------------------------------------------------------------------------
 
 
 #-----------------------------------------------------------------------------------------------------
 ## SAVE WORKBOOK ##
-saveWorkbook(wb, file = "test_wb.xlsx", overwrite = TRUE)
+saveWorkbook(wb, file = "Table_processed.xlsx", overwrite = TRUE)
 #-----------------------------------------------------------------------------------------------------
-
-
-# DONE CLEANING #
-#-----------------------------------------------------------------------------------------------------
-#-----------------------------------------------------------------------------------------------------
-
-
-#######
-# END #
-#######
