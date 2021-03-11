@@ -176,22 +176,36 @@ setColWidths(wb, sheet.name, cols = column.hide.indeces, widths = 8.43, hidden =
 
 # WIDEN
 # Widen the following columns for better legibility:
-# "Comparison..group1.group2." # set to width of 34
-# "Condition.Numerator" # set to width of 24
-# "Condition.Denominator" # set to width of 28
-# "AVG.Log2.Ratio" # set to width of 18
-# "Absolute.AVG.Log2.Ratio" # set to width of 24
-# "ProteinGroups" # set to width of 16
-# "ProteinNames" # set to width of 24
-# "ProteinDescriptions" # set to width of 32
-# "UniProtIds" # set to 14 
-# "GO.Biological.Process" # set to width of 50
-# "GO.Molecular.Function" # set to width of 50
-# "GO.Cellular.Component" # set to width of 50
-columns_to_widen <- c("Comparison..group1.group2.", "Condition.Numerator", "Condition.Denominator", "AVG.Log2.Ratio", "Absolute.AVG.Log2.Ratio", 
-                      "ProteinGroups", "ProteinNames", "ProteinDescriptions", "UniProtIds", "GO.Biological.Process", "GO.Molecular.Function", "GO.Cellular.Component")
+# "UniProtIds" # set to 15
+# "ProteinGroups" # set to width of 18
+# "ProteinNames" # set to width of 20
+# "ProteinDescriptions" # set to width of 40
+# "Comparison..group1.group2." # set to width of 20
+# "Condition.Numerator" # set to width of 15
+# "Condition.Denominator" # set to width of 15
+# "AVG.Log2.Ratio" # set to width of 19
+# "Absolute.AVG.Log2.Ratio" # set to width of 19
+# "GO.Biological.Process" # set to width of 55
+# "GO.Molecular.Function" # set to width of 55
+# "GO.Cellular.Component" # set to width of 55
+columns_to_widen <- c("UniProtIds", "ProteinGroups", "ProteinNames", "ProteinDescriptions", 
+                      "Comparison..group1.group2.", "Condition.Numerator", "Condition.Denominator", 
+                      "AVG.Log2.Ratio", "Absolute.AVG.Log2.Ratio",
+                      "GO.Biological.Process", "GO.Molecular.Function", "GO.Cellular.Component")
+
 column.widen.indeces <- which(colnames(df) %in% columns_to_widen)
-setColWidths(wb, sheet = 1, cols = column.widen.indeces, widths = c(30, 28, 28, 18, 30, 16, 30, 40, 6, 50, 50, 50)) # column widths
+
+# set widths for each column above (the order must match)
+column.widths <- c(15, 18, 20, 40, 
+                   20, 15, 15, 
+                   19, 19, 
+                   55, 55, 55)
+
+# assign names to column.widths vector - to keep things straight
+names(column.widths) <- columns_to_widen
+
+setColWidths(wb, sheet = 1, cols = column.widen.indeces, widths = column.widths) # column widths
+
 
 
 # CENTER
@@ -244,7 +258,7 @@ setColWidths(wb, sheet.name, cols=1:length(colnames(df)), widths = 10) # set all
 setColWidths(wb, sheet.name, cols = column.hide.indeces, widths = 8.43, hidden = TRUE, ignoreMergedCells = FALSE)
 
 # WIDEN
-setColWidths(wb, sheet = sheet.name, cols = column.widen.indeces, widths = c(30, 28, 28, 18, 30, 16, 30, 40, 6, 50, 50, 50)) # column widths
+setColWidths(wb, sheet = sheet.name, cols = column.widen.indeces, widths = column.widths) # column widths
 
 # CENTER
 # add style
@@ -283,7 +297,7 @@ for(i in unique(df$Comparison..group1.group2.)){
   setColWidths(wb, sheet.name, cols = column.hide.indeces, widths = 8.43, hidden = TRUE, ignoreMergedCells = FALSE)
   
   # WIDEN
-  setColWidths(wb, sheet = sheet.name, cols = column.widen.indeces, widths = c(30, 28, 28, 18, 30, 16, 30, 40, 6, 50, 50, 50)) # column widths
+  setColWidths(wb, sheet = sheet.name, cols = column.widen.indeces, widths = column.widths) # column widths
   
   # CENTER
   addStyle(wb, sheet = sheet.name, style = align_center_style, rows = 1:dim(df)[1], cols = column.center.indeces, gridExpand = TRUE, stack = TRUE)
