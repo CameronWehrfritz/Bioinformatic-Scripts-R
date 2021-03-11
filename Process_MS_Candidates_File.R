@@ -1,7 +1,7 @@
 #Written by Cameron Wehrfritz
 #Schilling Lab, Buck Institute for Research on Aging
 #Novato, California, USA
-#March 10, 2021
+#March 11, 2021
 
 # DESCRIPTION: This script processes Mass Spectrometry Candidates Files
 # i. cleans data
@@ -60,10 +60,11 @@ df <- df.input %>%
 
 #-----------------------------------------------------------------------------------------------------
 # CORRECT SOME COMPARISONS
-# which ratios do we want? These must be specified by hand in the flip.and.correct.fun
-# all samples vs. A ... Therefore need to flip A/B
-# all disease samples vs. M ... Therefore need to flip C/B, D/B
-
+# which comparisons do we want? 
+unique(df$Comparison..group1.group2.) # run this to print to screen comparisons which are present in the data
+# which comparisons need to be flipped?
+comparisons.to.flip <- c() # currently empty # add the comparisons you wish to flip and correct by hand
+                         
 
 # correction function
 # some comparisons are inverted, and need to be flipped and corrected 
@@ -103,7 +104,7 @@ flip.and.correct.fun <- function(df.x, comparisons){
 
 
 # apply correction function to dataframe
-df.corrected <- flip.and.correct.fun(df, c("E20_A / E20_B", "E20_C / E20_B", "E20_D / E20_B", "E20_E / E20_D", "E20_E / E20_B", "E20_E / E20_C")) # correct these comparisons
+df.corrected <- flip.and.correct.fun(df, comparisons.to.flip) # correct these comparisons - vector created above by hand, at the beginning of this chunk
 
 # print comparison ratios to screen - are these the ones we want?
 unique(df.corrected$Comparison..group1.group2.)
