@@ -59,8 +59,12 @@ unique(df$Comparison..group1.group2.)
 # FILTER FOR SIGNIFICANCE
 # by default we are using Q<0.05 and absolute.log2.ratio>0.58 
 
+# set cutoff values for filtering
+Qvalue.cutoff <- 0.01
+Log.Ratio.cutoff <- 0.58
+
 df <- df %>%
-  mutate(AVG.Log2.Ratio=ifelse(Qvalue<0.05 & Absolute.AVG.Log2.Ratio>0.58, AVG.Log2.Ratio, NA)) # replace non-significant observations with NA
+  mutate(AVG.Log2.Ratio=ifelse(Qvalue<Qvalue.cutoff & Absolute.AVG.Log2.Ratio>Log.Ratio.cutoff, AVG.Log2.Ratio, NA)) # replace non-significant observations with NA
 #-----------------------------------------------------------------------------------------------------
 
 
@@ -126,15 +130,21 @@ df.heatmap <- df.heatmap %>%
 #-----------------------------------------------------------------------------------------------------
 # PLOT HEATMAP
 
+# create title
+title <- paste("Significance criteria: \n Qvalue < ", Qvalue.cutoff, sep="") %>%
+  paste(" \n |Log2.Ratio| > ", Log.Ratio.cutoff, sep="")
+
+# plot
 df.heatmap %>%
   ggplot(aes(x=Comparison..group1.group2., y=Uni_Gene, fill=AVG.Log2.Ratio)) +
   coord_equal() +
   geom_tile(color = "white") +
   geom_point(aes(size = -log10(Qvalue)), colour = 'black', shape = 21) + # depict Qvalue with a black circle
   scale_fill_gradient2(low = "blue", mid = "white", high = "red", na.value = "white", limits=c(-3,3), oob=squish) + # squish and limits are used in controlling color saturation # library(scales)
-  xlab("") +
-  ylab("") +
-  theme(text = element_text(size = 18), axis.text.x = element_text(angle = 90, size=8), axis.text.y = element_text(size=7))
+  xlab("Comparisons") +
+  ylab("Proteins") +
+  ggtitle(title) +
+  theme(title = element_text(size=10), text = element_text(size = 20), axis.text.x = element_text(angle = 90, size=8), axis.text.y = element_text(size=7))
 #-----------------------------------------------------------------------------------------------------
 
 # END
