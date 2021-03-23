@@ -128,13 +128,13 @@ df.heatmap <- df.heatmap %>%
 
 
 #-----------------------------------------------------------------------------------------------------
-# PLOT HEATMAP
+# PLOT HEATMAP GGPLOT
 
 # create title
 title <- paste("Significance criteria: \n Qvalue < ", Qvalue.cutoff, sep="") %>%
   paste(" \n |Log2.Ratio| > ", Log.Ratio.cutoff, sep="")
 
-# plot
+# for shorter protein lists
 df.heatmap %>%
   ggplot(aes(x=Comparison..group1.group2., y=Uni_Gene, fill=AVG.Log2.Ratio)) +
   coord_equal() +
@@ -145,6 +145,83 @@ df.heatmap %>%
   ylab("Proteins") +
   ggtitle(title) +
   theme(title = element_text(size=10), text = element_text(size = 20), axis.text.x = element_text(angle = 90, size=8), axis.text.y = element_text(size=7))
+
+# for very long protein list, very small protein font and wide aspect ratio
+df.heatmap %>%
+  ggplot(aes(x=Comparison..group1.group2., y=Uni_Gene, fill=AVG.Log2.Ratio)) +
+  coord_equal(ratio = 1/3) + # aspect ratio y/x
+  geom_tile(color = "white") +
+  geom_point(aes(size = -log10(Qvalue)), colour = 'black', shape = 21) + # depict Qvalue with a black circle
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", na.value = "white", limits=c(-3,3), oob=squish) + # squish and limits are used in controlling color saturation # library(scales)
+  xlab("Comparisons") +
+  ylab("Proteins") +
+  ggtitle(title) +
+  theme(title = element_text(size=10), text = element_text(size = 20), axis.text.x = element_text(angle = 90, size=8), axis.text.y = element_text(size=2))
 #-----------------------------------------------------------------------------------------------------
+
+
+#-----------------------------------------------------------------------------------------------------
+# PLOT HEATMAP BASIC (not GGPLOT)
+# better for very long protein lists
+
+# create title
+title <- paste("Qvalue < ", Qvalue.cutoff, sep="") %>%
+  paste(" \n |Log2.Ratio| > ", Log.Ratio.cutoff, sep="")
+
+# wide format heatmap for non-ggplot heatmap
+df.basic <- df.heatmap %>%
+  dcast(formula = Uni_Gene + UniProtIds + Genes ~ Comparison..group1.group2., value.var=c("AVG.Log2.Ratio"))
+
+# keep only data 
+df.heatmap.input.temp <- df.basic %>%
+  select(-Uni_Gene, -UniProtIds, -Genes)
+
+# make data frame numeric
+df.heatmap.input <- apply(df.heatmap.input.temp, 2, as.numeric)
+
+# assign rownames for heatmap 
+rownames(df.heatmap.input) <- df.basic$Uni_Gene
+
+# heatmap layout options to customize the size of the dendrograms, key, etc...
+lmat = rbind(c(4,3),c(2,1))
+lwid = c(1,4)
+lhei = c(1,4)
+layout(mat = lmat, widths = lwid, heights = lhei)
+
+
+graphics.off()
+pdf(file="Heatmap_test.pdf", 8.25, 11)
+
+#Heatmap
+heatmap.2(df.heatmap.input, 
+          main=paste("Esophagus E20 \n", title, sep=" "), # heatmap title
+          scale="none", # scale to row or column or none
+          col=bluered, # color key palette
+          trace="none",
+          breaks = seq(-4,4,2*0.001), # specifies when to saturate with color, and how many steps
+          key=TRUE, # includes a color key
+          symkey=FALSE,
+          density.info="none", 
+          margins = c(10, 10), 
+          Rowv=TRUE, # row clustering   
+          Colv=FALSE, # column clustering   
+          na.color = "gray", # color of NA values
+          dendrogram="none", 
+          cexCol=0.75, # column text size
+          cexRow=0.4, # row text size
+          key.title="", # title of the key
+          key.xlab="", # key x axis labels
+          lmat=lmat, # requires heatmap layout above to be specified
+          lwid=lwid, # requires heatmap layout above to be specified
+          lhei=lhei, # requires heatmap layout above to be specified 
+          key.par = list(cex=1.05, mar=c(5,3,3.5,0)), # mar is A numerical vector of the form c(bottom, left, top, right) 
+          #which gives the number of lines of margin to be specified on the four sides of the plot. The default is c(5, 4, 4, 2) + 0.1.
+          keysize = 1.5
+)
+# #add timestamp
+# mtext(date(), side=1, line=4, adj=0) # side (1=bottom, 2=left, 3=top, 4=right)
+graphics.off()
+#-----------------------------------------------------------------------------------------------------
+
 
 # END
