@@ -124,6 +124,14 @@ protein.hc.order <- df.to.cluster[hierarchical.cluster$order, ] %>%
 df.heatmap <- df.heatmap %>% 
   mutate(Uni_Gene = factor(Uni_Gene, levels = protein.hc.order)) %>% # relevel factor
   arrange(Uni_Gene) # rearrange rows
+
+# do you want to rearrange the columns (which show each comparison)? if not, skip this step
+df.heatmap <- df.heatmap %>%
+  mutate(Comparison..group1.group2. =  factor(Comparison..group1.group2., levels = c("E21_bT_vs_E21_aM", "E21_bT_vs_E21_dM", "E21_bT_vs_E21_eNS", "E21_bT_vs_E21_fNE", 
+                                                                                     "E21_bT_vs_EN01_trueNorm", "E21_bT_vs_EN02_trueNorm",
+                                                                                     "E21_cT_vs_E21_bT", 
+                                                                                     "E21_cT_vs_E21_aM", "E21_cT_vs_E21_dM", "E21_cT_vs_E21_eNS", "E21_cT_vs_E21_fNE",
+                                                                                     "E21_cT_vs_EN01_trueNorm", "E21_cT_vs_EN02_trueNorm")))
 #-----------------------------------------------------------------------------------------------------
 
 
