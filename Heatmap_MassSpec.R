@@ -120,7 +120,7 @@ hierarchical.cluster <- df.to.cluster %>%
 protein.hc.order <- df.to.cluster[hierarchical.cluster$order, ] %>%
   pull(Uni_Gene)
 
-# rearrange heatmap according to hierarchical clustered ordering
+# rearrange heatmap rows according to hierarchical clustered ordering
 df.heatmap <- df.heatmap %>% 
   mutate(Uni_Gene = factor(Uni_Gene, levels = protein.hc.order)) %>% # relevel factor
   arrange(Uni_Gene) # rearrange rows
@@ -217,6 +217,42 @@ heatmap.2(df.heatmap.input,
           dendrogram="none", 
           cexCol=0.75, # column text size
           cexRow=0.4, # row text size
+          key.title="", # title of the key
+          key.xlab="", # key x axis labels
+          lmat=lmat, # requires heatmap layout above to be specified
+          lwid=lwid, # requires heatmap layout above to be specified
+          lhei=lhei, # requires heatmap layout above to be specified 
+          key.par = list(cex=1.05, mar=c(5,3,3.5,0)), # mar is A numerical vector of the form c(bottom, left, top, right) 
+          #which gives the number of lines of margin to be specified on the four sides of the plot. The default is c(5, 4, 4, 2) + 0.1.
+          keysize = 1.5
+)
+# #add timestamp
+# mtext(date(), side=1, line=4, adj=0) # side (1=bottom, 2=left, 3=top, 4=right)
+graphics.off()
+
+
+# optional
+# same heatmap, with column clustering
+graphics.off()
+pdf(file="Heatmap_colclustered_test.pdf", 8.25, 11)
+
+#Heatmap
+heatmap.2(df.heatmap.input, 
+          main=paste("Esophagus E21 \n", title, sep=" "), # heatmap title
+          scale="none", # scale to row or column or none
+          col=bluered, # color key palette
+          trace="none",
+          breaks = seq(-4,4,2*0.001), # specifies when to saturate with color, and how many steps
+          key=TRUE, # includes a color key
+          symkey=FALSE,
+          density.info="none", 
+          margins = c(10, 10), 
+          Rowv=TRUE, # row clustering   
+          Colv=TRUE, # column clustering   
+          na.color = "gray", # color of NA values
+          dendrogram="none", 
+          cexCol=0.75, # column text size
+          cexRow=0.3, # row text size
           key.title="", # title of the key
           key.xlab="", # key x axis labels
           lmat=lmat, # requires heatmap layout above to be specified
