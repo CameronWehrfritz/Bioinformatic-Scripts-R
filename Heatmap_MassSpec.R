@@ -30,6 +30,7 @@ package.check <- lapply(packages, FUN = function(x) {
 #--------------------------------------------------------------------------------------------
 # LOAD DATA
 
+# note about CRUK STORMing Cancer Data:
 # CRUK .csv files are stored in the repository MASTER_Processed_Input_CSV_Files
 # these .csv files have been processed from the original raw .tsv files
 
@@ -125,18 +126,14 @@ df.heatmap <- df.heatmap %>%
   mutate(Uni_Gene = factor(Uni_Gene, levels = protein.hc.order)) %>% # relevel factor
   arrange(Uni_Gene) # rearrange rows
 
-# do you want to rearrange the columns (which show each comparison)? if not, skip this step
-df.heatmap <- df.heatmap %>%
-  mutate(Comparison..group1.group2. =  factor(Comparison..group1.group2., levels = c("E21_bT_vs_E21_aM", "E21_bT_vs_E21_dM", "E21_bT_vs_E21_eNS", "E21_bT_vs_E21_fNE", 
-                                                                                     "E21_bT_vs_EN01_trueNorm", "E21_bT_vs_EN02_trueNorm",
-                                                                                     "E21_cT_vs_E21_bT", 
-                                                                                     "E21_cT_vs_E21_aM", "E21_cT_vs_E21_dM", "E21_cT_vs_E21_eNS", "E21_cT_vs_E21_fNE",
-                                                                                     "E21_cT_vs_EN01_trueNorm", "E21_cT_vs_EN02_trueNorm")))
+# # do you want to rearrange the columns (which show each comparison)? if not, skip this step
+# df.heatmap <- df.heatmap %>%
+#   mutate(Comparison..group1.group2. =  factor(Comparison..group1.group2., levels = c("ENTER COMPARISON HERE", "ENTER COMPARISON HERE", "ETC")))
 #-----------------------------------------------------------------------------------------------------
 
 
 #-----------------------------------------------------------------------------------------------------
-# PLOT HEATMAP GGPLOT
+# PLOT HEATMAP WITH GGPLOT
 
 # create title
 title <- paste("Significance criteria: \n Qvalue < ", Qvalue.cutoff, sep="") %>%
@@ -176,6 +173,24 @@ df.heatmap %>%
 title <- paste("Qvalue < ", Qvalue.cutoff, sep="") %>%
   paste(" \n |Log2.Ratio| > ", Log.Ratio.cutoff, sep="")
 
+# function for calculating font size for heatmap row labels
+heatmap.font.size.function <- function(x){
+  # input x is the number of proteins to be displayed in the heatmap
+  if(all(x>0, x<=135)){
+    # use this linear function to calculate font size
+    font.size <- -0.007*x + 1.07
+  }
+  if(x>135){
+    # default to a very small font size for large lists of proteins
+    font.size <- 0.1 
+  }
+  if(x<0){
+    # x must be positive
+    font.size <- NA
+  }
+  return(font.size)
+}
+
 # wide format heatmap for non-ggplot heatmap
 df.basic <- df.heatmap %>%
   dcast(formula = Uni_Gene + UniProtIds + Genes ~ Comparison..group1.group2., value.var=c("AVG.Log2.Ratio"))
@@ -200,9 +215,9 @@ layout(mat = lmat, widths = lwid, heights = lhei)
 graphics.off()
 pdf(file="Heatmap_test.pdf", 8.25, 11)
 
-#Heatmap
+# Heatmap
 heatmap.2(df.heatmap.input, 
-          main=paste("Esophagus E20 \n", title, sep=" "), # heatmap title
+          main=paste("TITLE \n", title, sep=" "), # heatmap title
           scale="none", # scale to row or column or none
           col=bluered, # color key palette
           trace="none",
@@ -216,7 +231,7 @@ heatmap.2(df.heatmap.input,
           na.color = "gray", # color of NA values
           dendrogram="none", 
           cexCol=0.75, # column text size
-          cexRow=0.4, # row text size
+          cexRow=heatmap.font.size.function(nrow(df.heatmap.basic)), # row text size
           key.title="", # title of the key
           key.xlab="", # key x axis labels
           lmat=lmat, # requires heatmap layout above to be specified
@@ -230,41 +245,40 @@ heatmap.2(df.heatmap.input,
 # mtext(date(), side=1, line=4, adj=0) # side (1=bottom, 2=left, 3=top, 4=right)
 graphics.off()
 
-
-# optional
-# same heatmap, with column clustering
-graphics.off()
-pdf(file="Heatmap_colclustered_test.pdf", 8.25, 11)
-
-#Heatmap
-heatmap.2(df.heatmap.input, 
-          main=paste("Esophagus E21 \n", title, sep=" "), # heatmap title
-          scale="none", # scale to row or column or none
-          col=bluered, # color key palette
-          trace="none",
-          breaks = seq(-4,4,2*0.001), # specifies when to saturate with color, and how many steps
-          key=TRUE, # includes a color key
-          symkey=FALSE,
-          density.info="none", 
-          margins = c(10, 10), 
-          Rowv=TRUE, # row clustering   
-          Colv=TRUE, # column clustering   
-          na.color = "gray", # color of NA values
-          dendrogram="none", 
-          cexCol=0.75, # column text size
-          cexRow=0.3, # row text size
-          key.title="", # title of the key
-          key.xlab="", # key x axis labels
-          lmat=lmat, # requires heatmap layout above to be specified
-          lwid=lwid, # requires heatmap layout above to be specified
-          lhei=lhei, # requires heatmap layout above to be specified 
-          key.par = list(cex=1.05, mar=c(5,3,3.5,0)), # mar is A numerical vector of the form c(bottom, left, top, right) 
-          #which gives the number of lines of margin to be specified on the four sides of the plot. The default is c(5, 4, 4, 2) + 0.1.
-          keysize = 1.5
-)
-# #add timestamp
-# mtext(date(), side=1, line=4, adj=0) # side (1=bottom, 2=left, 3=top, 4=right)
-graphics.off()
+# # optional
+# # same heatmap, with column clustering
+# graphics.off()
+# pdf(file="Heatmap_colclustered_test.pdf", 8.25, 11)
+# 
+# #Heatmap
+# heatmap.2(df.heatmap.input, 
+#           main=paste("TITLE \n", title, sep=" "), # heatmap title
+#           scale="none", # scale to row or column or none
+#           col=bluered, # color key palette
+#           trace="none",
+#           breaks = seq(-4,4,2*0.001), # specifies when to saturate with color, and how many steps
+#           key=TRUE, # includes a color key
+#           symkey=FALSE,
+#           density.info="none", 
+#           margins = c(10, 10), 
+#           Rowv=TRUE, # row clustering   
+#           Colv=TRUE, # column clustering   
+#           na.color = "gray", # color of NA values
+#           dendrogram="none", 
+#           cexCol=0.75, # column text size
+#           cexRow=heatmap.font.size.function(nrow(df.heatmap.basic)), # row text size
+#           key.title="", # title of the key
+#           key.xlab="", # key x axis labels
+#           lmat=lmat, # requires heatmap layout above to be specified
+#           lwid=lwid, # requires heatmap layout above to be specified
+#           lhei=lhei, # requires heatmap layout above to be specified 
+#           key.par = list(cex=1.05, mar=c(5,3,3.5,0)), # mar is A numerical vector of the form c(bottom, left, top, right) 
+#           #which gives the number of lines of margin to be specified on the four sides of the plot. The default is c(5, 4, 4, 2) + 0.1.
+#           keysize = 1.5
+# )
+# # #add timestamp
+# # mtext(date(), side=1, line=4, adj=0) # side (1=bottom, 2=left, 3=top, 4=right)
+# graphics.off()
 #-----------------------------------------------------------------------------------------------------
 
 
