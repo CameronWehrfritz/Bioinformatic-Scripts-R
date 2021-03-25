@@ -8,8 +8,8 @@
 
 #--------------------------------------------------------------------------------------------
 #set working directory
-# setwd("/Volumes/GibsonLab/users/Cameron/2020_0701_CRUK_STORMing_Cancer_MASTER/2021_0310_E20_CRUK/R_workspace") # mac
-setwd("//bigrock/GibsonLab/users/Cameron/2020_0701_CRUK_STORMing_Cancer_MASTER/2021_0310_E20_CRUK/R_workspace") # pc
+# setwd("/Volumes/GibsonLab/users/Cameron/2020_0701_CRUK_STORMing_Cancer_MASTER/2021_0310_E20_CRUK/R_workspace") # MAC
+setwd("//bigrock/GibsonLab/users/Cameron/2020_0701_CRUK_STORMing_Cancer_MASTER/2021_0310_E20_CRUK/R_workspace") # PC
 #--------------------------------------------------------------------------------------------
 
 
@@ -58,7 +58,8 @@ unique(df$Comparison..group1.group2.)
 
 #-----------------------------------------------------------------------------------------------------
 # FILTER FOR SIGNIFICANCE
-# by default we are using Q<0.05 and absolute.log2.ratio>0.58 
+# typically we are using Q<0.05 and absolute.log2.ratio>0.58 
+# slightly more stringent is Q<0.01 and absolute.log2.ratio>0.58 
 
 # set cutoff values for filtering
 Qvalue.cutoff <- 0.01
