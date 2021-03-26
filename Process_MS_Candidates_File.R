@@ -65,9 +65,11 @@ df <- df.input %>%
 
 
 #-----------------------------------------------------------------------------------------------------
+# check which comparisons are present in the data
+unique(df$Comparison..group1.group2.) # run this to print to screen comparisons which are present in the data
+# optional
 # CORRECT SOME COMPARISONS
 # which comparisons do we want? 
-unique(df$Comparison..group1.group2.) # run this to print to screen comparisons which are present in the data
 # which comparisons need to be flipped?
 comparisons.to.flip <- c("E_21_C / E_21_B") # add the comparisons you wish to flip and correct by hand
 # check that these comparisons are in the dataset (confirm no typos)
@@ -142,12 +144,7 @@ df <- df.corrected
 
 #-----------------------------------------------------------------------------------------------------
 # Make First Sheet
-# This sheet contains all of the data (no filters)
-
-# # first set sheet name
-# x <- 0 # set x equal to 0 for the very first sheet
-# sheet.name <- paste("sheet", x+1)
-# x <- x+1 # increment x
+# This sheet contains all of the data (with the exception of always filtering out the one peptide wonders)
 
 sheet.name <- "All proteins"
 
@@ -241,32 +238,36 @@ addStyle(wb, sheet.name, style = align_center_style, rows = 1:dim(df)[1], cols =
 
 
 #-----------------------------------------------------------------------------------------------------
-# Make Second Sheet
-# This sheet contains all proteins with at least 2 unique peptides
+# Make one separate sheet for each comparison
+# which contains all of the proteins with at least 2 unique peptides
 
-sheet.name <- "All proteins 2+ peptides"
-
-
-# all proteins with at least 2 unique peptides
-df.sig <- df %>%
-  filter(Number.of.Unique.Total.Peptides>1) # must have at least 2 unique peptides per protein
-
-addWorksheet(wb, sheet.name, gridLines = TRUE)
-writeData(wb, sheet.name, df.sig, rowNames = FALSE) # significantly altered proteins
-
-addStyle(wb, sheet.name, headerStyle, rows = 1, cols = 1:length(colnames(df)), gridExpand = TRUE)
-setColWidths(wb, sheet.name, cols=1:length(colnames(df)), widths = 10) # set all column widths to 10; more tailoring to come later
-
-# HIDE
-setColWidths(wb, sheet.name, cols = column.hide.indeces, widths = 8.43, hidden = TRUE, ignoreMergedCells = FALSE)
-
-# WIDEN
-setColWidths(wb, sheet = sheet.name, cols = column.widen.indeces, widths = column.widths) # column widths
-
-# CENTER
-addStyle(wb, sheet = sheet.name, style = align_center_style, rows = 1:dim(df)[1], cols = column.center.indeces, gridExpand = TRUE, stack = TRUE)
-
-# END SHEET
+for(i in unique(df$Comparison..group1.group2.)){
+  print(i)
+  # sheet name is the comparison + descriptor
+  # change comparison name slightly for writing to excel file
+  sheet.name <- paste(gsub("\\/", "vs", i), "All", sep=" ") # replace the slash division with 'vs'
+  
+  # significantly altered proteins with at least 2 unique peptides for this specific comparison
+  df.sig <- df %>%
+    filter(Comparison..group1.group2.==i) %>% # filter for specific comparison for this sheet
+    filter(Number.of.Unique.Total.Peptides>1) # must have at least 2 unique peptides per protein
+  
+  addWorksheet(wb, sheet.name, gridLines = TRUE)
+  writeData(wb, sheet.name, df.sig, rowNames = FALSE)
+  
+  addStyle(wb, sheet.name, headerStyle, rows = 1, cols = 1:length(colnames(df)), gridExpand = TRUE)
+  setColWidths(wb, sheet.name, cols=1:length(colnames(df)), widths = 10) # set all column widths to 10; more tailoring to come later
+  
+  # HIDE
+  setColWidths(wb, sheet.name, cols = column.hide.indeces, widths = 8.43, hidden = TRUE, ignoreMergedCells = FALSE)
+  
+  # WIDEN
+  setColWidths(wb, sheet = sheet.name, cols = column.widen.indeces, widths = column.widths) # column widths
+  
+  # CENTER
+  addStyle(wb, sheet = sheet.name, style = align_center_style, rows = 1:dim(df)[1], cols = column.center.indeces, gridExpand = TRUE, stack = TRUE)
+  # END SHEET
+}
 #-----------------------------------------------------------------------------------------------------
 
 
@@ -276,9 +277,9 @@ addStyle(wb, sheet = sheet.name, style = align_center_style, rows = 1:dim(df)[1]
 
 for(i in unique(df$Comparison..group1.group2.)){
   print(i)
-  # sheet name is the comparison 
+  # sheet name is the comparison + descriptor
   # change comparison name slightly for writing to excel file
-  sheet.name <- gsub("\\/", "vs", i) # replace the slash division with 'vs'
+  sheet.name <- paste(gsub("\\/", "vs", i), "Significant", sep=" ") # replace the slash division with 'vs'
 
   # significantly altered proteins with at least 2 unique peptides for this specific comparison
   df.sig <- df %>%
@@ -310,7 +311,7 @@ for(i in unique(df$Comparison..group1.group2.)){
 # RENAME THE SHEETS
 # optional
 
-# names(wb) <- c("All proteins", "All proteins 2+ peptides", "sheet 3")
+# names(wb) <- c("All proteins", "Sheet 2", "Sheet 3", "etc...")
 #-----------------------------------------------------------------------------------------------------
 
 
@@ -328,3 +329,5 @@ output.filename <- input.filename %>%
 saveWorkbook(wb, file = output.filename, overwrite = TRUE)
 #-----------------------------------------------------------------------------------------------------
 
+
+# END
