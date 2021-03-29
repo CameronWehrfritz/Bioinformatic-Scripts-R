@@ -330,4 +330,34 @@ saveWorkbook(wb, file = output.filename, overwrite = TRUE)
 #-----------------------------------------------------------------------------------------------------
 
 
+#------------------------------------------------------------------------------------
+# calculate number of proteins by condition
+df.grouped.all <- df %>%
+  filter(Number.of.Unique.Total.Peptides > 1) %>% # filter for at least 2 unique peptides per protein - exclude one peptide wonders
+  select(Comparison..group1.group2., AVG.Log2.Ratio) %>%
+  dplyr::group_by(Comparison..group1.group2.) %>%
+  mutate(COUNT_ALL = n()) %>%
+  mutate(DIRECTION = ifelse(AVG.Log2.Ratio>0, "UP", "DOWN")) %>%
+  dplyr::group_by(Comparison..group1.group2., DIRECTION) %>%
+  mutate(COUNT_DIR = n()) %>%
+  select(-AVG.Log2.Ratio) %>%
+  unique()
+#------------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------------
+# calculate number of significantly changed proteins by condition and by direction
+df.grouped.sig <- df %>%
+  filter(Number.of.Unique.Total.Peptides > 1) %>% # filter for at least 2 unique peptides per protein - exclude one peptide wonders
+  filter(Qvalue<0.01) %>%
+  filter(Absolute.AVG.Log2.Ratio>0.58) %>%
+  select(Comparison..group1.group2., AVG.Log2.Ratio) %>%
+  mutate(DIRECTION = ifelse(AVG.Log2.Ratio>0, "UP", "DOWN")) %>%
+  dplyr::group_by(Comparison..group1.group2., DIRECTION) %>%
+  mutate(COUNT_SIG = n()) %>%
+  select(-AVG.Log2.Ratio) %>%
+  unique()
+#------------------------------------------------------------------------------------
+
+
 # END
