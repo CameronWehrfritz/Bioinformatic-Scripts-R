@@ -149,10 +149,10 @@ df <- df.corrected
 sheet.name <- "All proteins"
 
 # ROUND
-# Round the values in the following columns to 2 decimal places:
+# Round the values for the following variables:
 columns_to_round <- c("AVG.Log2.Ratio", "Absolute.AVG.Log2.Ratio", "Ratio")
 df <- df %>% 
-  mutate_at(columns_to_round, round, digits = 2)
+  mutate_at(columns_to_round, round, digits = 1)
 
 
 # HIDE
@@ -183,7 +183,7 @@ setColWidths(wb, sheet.name, cols = column.hide.indeces, widths = 8.43, hidden =
 # "Genes" # set to 10
 # "ProteinGroups" # set to width of 18
 # "ProteinNames" # set to width of 20
-# "ProteinDescriptions" # set to width of 40
+# "ProteinDescriptions" # set to width of 58
 # "Comparison..group1.group2." # set to width of 20
 # "AVG.Log2.Ratio" # set to width of 19
 # "Qvalue" # set to width of 12
@@ -201,7 +201,7 @@ column.widen.indeces <- which(colnames(df) %in% columns_to_widen)
 
 # set widths for each column above (the order must match)
 column.widths <- c(15, 10, 
-                   18, 20, 40, 
+                   18, 20, 58, 
                    20,
                    19, 12, 19, 
                    55, 55, 55)
@@ -239,17 +239,19 @@ addStyle(wb, sheet.name, style = align_center_style, rows = 1:dim(df)[1], cols =
 
 #-----------------------------------------------------------------------------------------------------
 # Make one separate sheet for each comparison
-# which contains all of the proteins with at least 2 unique peptides
+# which contains the significantly altered proteins with at least 2 unique peptides
 
 for(i in unique(df$Comparison..group1.group2.)){
   print(i)
   # sheet name is the comparison + descriptor
   # change comparison name slightly for writing to excel file
-  sheet.name <- paste(gsub("\\/", "vs", i), "All", sep=" ") # replace the slash division with 'vs'
-  
+  sheet.name <- paste(gsub("\\/", "vs", i), "Significant", sep=" ") # replace the slash division with 'vs'
+
   # significantly altered proteins with at least 2 unique peptides for this specific comparison
   df.sig <- df %>%
     filter(Comparison..group1.group2.==i) %>% # filter for specific comparison for this sheet
+    filter(Qvalue<=0.05) %>%
+    filter(Absolute.AVG.Log2.Ratio>0.58) %>%
     filter(Number.of.Unique.Total.Peptides>1) # must have at least 2 unique peptides per protein
   
   addWorksheet(wb, sheet.name, gridLines = TRUE)
@@ -273,19 +275,17 @@ for(i in unique(df$Comparison..group1.group2.)){
 
 #-----------------------------------------------------------------------------------------------------
 # Make one separate sheet for each comparison
-# which contains the significantly altered proteins with at least 2 unique peptides
+# which contains all of the proteins with at least 2 unique peptides
 
 for(i in unique(df$Comparison..group1.group2.)){
   print(i)
   # sheet name is the comparison + descriptor
   # change comparison name slightly for writing to excel file
-  sheet.name <- paste(gsub("\\/", "vs", i), "Significant", sep=" ") # replace the slash division with 'vs'
-
+  sheet.name <- paste(gsub("\\/", "vs", i), "All", sep=" ") # replace the slash division with 'vs'
+  
   # significantly altered proteins with at least 2 unique peptides for this specific comparison
   df.sig <- df %>%
     filter(Comparison..group1.group2.==i) %>% # filter for specific comparison for this sheet
-    filter(Qvalue<=0.05) %>%
-    filter(Absolute.AVG.Log2.Ratio>0.58) %>%
     filter(Number.of.Unique.Total.Peptides>1) # must have at least 2 unique peptides per protein
   
   addWorksheet(wb, sheet.name, gridLines = TRUE)
