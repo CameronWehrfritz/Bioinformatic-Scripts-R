@@ -44,8 +44,14 @@ suppressPackageStartupMessages(library(qvalue))
 #------------------------------------------------------------------------------------
 # load data
 
-# BGS Report of CETSA data on the peptide level
-df.input <- read_xlsx("//bigrock/GibsonLab/users/birgit/Barecia/BRC4_CDK/21_0325_BRC4_V1/Spectronaut/20210325_174612_210325_BRC4_all files_V1/20210329_102638_210325_BRC4_all files_V1_BGS_V2_Report_CW.xlsx")
+# .tsv BGS Report of CETSA data on the peptide level # for very large files like this, make sure it is saved in either .tsv or .csv file format to prevent data loss
+df.input <- read.csv("//bigrock/GibsonLab/users/birgit/Barecia/BRC4_CDK/21_0325_BRC4_V1/Spectronaut/20210325_174612_210325_BRC4_all files_V1/20210401_164439_210325_BRC4_all_files_V1_BGS_V2_Report.tsv", 
+                     sep="\t", stringsAsFactors = FALSE)
+
+# check out the unique files names
+df.input$R.FileName %>% unique()
+# how many files names?
+df.input$R.FileName %>% unique() %>% length()
 #------------------------------------------------------------------------------------
 
 
@@ -59,6 +65,19 @@ df <- df.input %>%
   group_by(PG.ProteinAccessions, PG.Genes, R.Replicate, Treatment, Temperature) %>% # sum FG.Quantity across peptides
   summarise(Total.FG.Quantity = sum(FG.Quantity)) %>% 
   ungroup() 
+#------------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------------
+# check out data a bit before proceeding with analysis
+
+# how many temperature points and proteins were measured for each condition and replicate?
+df %>%
+  group_by(R.Replicate, Treatment) %>%
+  mutate(Number.of.Temperature.Points = unique(Temperature) %>% length()) %>%
+  mutate(Number.of.Proteins = unique(PG.ProteinAccessions) %>% length()) %>%
+  select(R.Replicate, Treatment, Number.of.Temperature.Points, Number.of.Proteins) %>%
+  unique()
 #------------------------------------------------------------------------------------
 
 
