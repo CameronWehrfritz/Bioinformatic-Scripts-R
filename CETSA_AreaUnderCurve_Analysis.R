@@ -56,19 +56,25 @@ df.input$R.FileName %>% unique() %>% length()
 # candidates file (which contains the number of unique peptides for each protein)
 # only need to use candidates file if the BGS Report does not contain number of unique peptides information (Christina will include this variable in future BGS Reports)
 df.candidates <- read.csv("//bigrock/GibsonLab/users/birgit/Barecia/BRC4_CDK/21_0325_BRC4_V1/Spectronaut/20210325_174612_210325_BRC4_all files_V1/Candidates.tsv", sep="\t", stringsAsFactors = FALSE)
+#------------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------------
+# remove one peptide wonders
 
 # one peptide wonders
-df.wonders <- df.candidates %>%
-  filter(X..Unique.Total.Peptides == 1)
-
-# how many one peptide wonders?
-wonder.prots <- df.wonders %>%
+wonder.prots <- df.candidates %>%
+  filter(X..Unique.Total.Peptides == 1) %>%
   pull(UniProtIds) %>%
   unique()
 
 # remove one peptide wonders from input data
 df.input <- df.input %>%
-  filter(! PG.ProteinAccessions %in% wonder.prots) 
+  filter(! PG.ProteinAccessions %in% wonder.prots) # exclude one peptide wonders
+
+# remove one peptide wonders from candidates data
+df.candidates <- df.candidates %>%
+  filter(X..Unique.Total.Peptides > 1) # exclude one peptide wonders
 #------------------------------------------------------------------------------------
 
 
