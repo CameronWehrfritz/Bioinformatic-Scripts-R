@@ -283,6 +283,19 @@ graphics.off()
 #------------------------------------------------------------------------------------
 
 
+#------------------------------------------------------------------------------------
+# summarize key points for each protein
+# need to improve this...
+
+df.test <- df.stats.sig %>%
+  select(PG.ProteinAccessions, PG.Genes, Temperature, Pvalue, T.value, Number.Significant.Points) %>%
+  unique()
+
+df.test.2 <- df.stats.sig %>%
+  select(PG.ProteinAccessions, PG.Genes, Number.Significant.Points) %>%
+  unique()
+#------------------------------------------------------------------------------------
+
 # #------------------------------------------------------------------------------------
 # # Qvalue 
 # 
