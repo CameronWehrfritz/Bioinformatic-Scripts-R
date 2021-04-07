@@ -1,15 +1,15 @@
 #written by Cameron Wehrfritz 
 #Schilling Lab, Buck Institute
-#April 5, 20201
+#April 5, 2021
 
-# Performs statistical analysis on CETSA mass spec data via Individual Temperature Method
+# Performs statistical analysis on CETSA mass spec data via Individual-Temperature-Method
 # This script calculates:
-# i. Statistics via Welch Two Sample t-test for each temperature point
-# ii. qvalues using bioconductor's qvalue package
+# i. Statistics via Welch Two Sample t-test at each temperature, comparing relative abundances of each treatment group
+# ii. Rank of each protein as a potential target (higher the better)
 
 # OUTPUT: 
 # i. processed excel workbook with multiple sheets
-# ii. plots of melting curves on the protein level - averaged across replicates
+# ii. plots of melting curves in ranked order
 
 ### Begin Script ###
 
@@ -138,12 +138,9 @@ df <- df %>%
 #------------------------------------------------------------------------------------
 
 
-# WORKING ON THIS CHUNK 4/5/2021
 #------------------------------------------------------------------------------------
 # Calculate Statistical Differences between Treatment and Control at each Temperature Point
 
-# this also works, and keeps all of the data
-# Pvalues and T.values are hardcoded to p=1 and t=0 at 37 degrees (the first temp.) because those values are all normalized to 1
 df.stats <- df %>%
   group_by(PG.ProteinAccessions, PG.Genes, Treatment, Temperature) %>%
   mutate(values=list(Normalized.FG.Quantity)) %>% # create list-column of quantities to perform statistics on
@@ -151,11 +148,12 @@ df.stats <- df %>%
   ungroup() %>%
   group_by(PG.ProteinAccessions, PG.Genes, Temperature) %>% 
   # perform statistical test by protein+gene+temperature
+  # Pvalues and T.values are hardcoded to Pvalue=1 and T.value=0 at 37 degrees (the first temperature) because those values are all normalized to 1
   mutate(Pvalue=ifelse(Temperature>37, t.test(unlist(CTL), unlist(NMN))$p.value, 1), 
          T.value=ifelse(Temperature>37, t.test(unlist(CTL), unlist(NMN))$statistic, 0)) %>%
   ungroup()
 
-# # using pivot_wider ... not working yet - update later at some point
+# # using pivot_wider ... not working yet - update later at some point?
 # df.test <- df %>%
 #   group_by(PG.ProteinAccessions, PG.Genes, Treatment, Temperature) %>%
 #   mutate(values=list(Normalized.FG.Quantity)) %>% # create list-column of quantities to perform statistics on
@@ -167,61 +165,127 @@ df.stats <- df %>%
 #          T.value=ifelse(Temperature>37, t.test(unlist(CTL), unlist(NMN))$statistic, 0)) %>%
 #   ungroup()
 
-# Make Average value columns for plotting
+# make average value columns for plotting
 df.stats <- df.stats %>%
   group_by(PG.ProteinAccessions, PG.Genes, Temperature) %>% 
   mutate(AVG.CONTROL=mean(unlist(CTL)), AVG.NMN=mean(unlist(NMN))) %>% # calculate averages
-  mutate(Ratio=AVG.NMN/AVG.CONTROL) %>% # calculate ratio of averages
+  mutate(Ratio=AVG.NMN/AVG.CONTROL) %>% # calculate ratio of averages - ensure control is in the denominator
   ungroup()
 #------------------------------------------------------------------------------------
 
 
 #------------------------------------------------------------------------------------
 # Calculate the number of significant data points for each protein
-# set threshold
+
+# set pvalue threshold
 Pvalue.threshold <- 0.05
 
-df.sig.number <- df.stats %>%
-  group_by(PG.ProteinAccessions) %>%
-  summarise(Number.Significant.Points=sum(Pvalue < Pvalue.threshold & Ratio > 1)) # significant Pvalue and Ratio>1
+# reduce observations and calculate number of significant data points
+df.stats.reduced <- df.stats %>%
+  # boil down observations
+  select(PG.ProteinAccessions, PG.Genes, Temperature, T.value, AVG.CONTROL, AVG.NMN, Pvalue, Ratio) %>%
+  unique() %>%
+  # determine significant yes/no for each observation
+  mutate(Significant = ifelse(Pvalue < Pvalue.threshold & Ratio > 1, "yes", "no")) %>%
+  # calculate number of statistically significant data points for each protein
+  group_by(PG.ProteinAccessions, PG.Genes) %>%
+  mutate(Number.Significant.Points = sum(Pvalue < Pvalue.threshold & Ratio > 1)) %>%
+  ungroup() %>%
+  arrange(desc(Number.Significant.Points)) # arrange most significant first
 
-# add this calculation on to df.stats
+# add this calculation on to the full data set for completeness
 df.stats <- df.stats %>%
-  group_by(PG.ProteinAccessions) %>%
-  mutate(Number.Significant.Points=sum(Pvalue < Pvalue.threshold & Ratio > 1)) %>% # significant Pvalue and Ratio>1
-  ungroup()
+  left_join(df.stats.reduced %>% select(PG.ProteinAccessions, PG.Genes, Number.Significant.Points), by=c("PG.ProteinAccessions", "PG.Genes"))
 #------------------------------------------------------------------------------------
 
 
-
 #------------------------------------------------------------------------------------
-# Which Proteins have at least 1 significant data point?
+# which proteins have at least 1 significant data point?
 
 # statistically significant proteins
-sig.proteins <- df.sig.number %>%
-  filter(Number.Significant.Points>0) %>% # must have at least 1 significant data point: significant Pvalue and Ratio>1
+sig.proteins <- df.stats.reduced %>%
+  filter(Number.Significant.Points>0) %>% # must have at least 1 significant data point
   arrange(desc(Number.Significant.Points)) %>% # arrange most significant first
   pull(PG.ProteinAccessions) %>%
   unique()
 
-# get statistically significant proteins
-df.stats.sig <- df.stats %>%
-  filter(Number.Significant.Points>0) %>%
+# subset statistically significant protein data
+df.significant <- df.stats.reduced %>%
+  filter(Number.Significant.Points>0) %>% # must have at least 1 significant temperature point
   arrange(desc(Number.Significant.Points)) # arrange most significant first
 #------------------------------------------------------------------------------------
 
 
 #------------------------------------------------------------------------------------
-# prepare for writing out and plotting
+# rank the significant hits
 
-# remove list-columns and convert to data frame - this makes writing out and plotting easier
-df.stats.sig <- df.stats.sig %>%
-  select(-CTL, -NMN) %>% # remove list-column
-  as.data.frame()
+# rank according to the following criteria, in this order below: 
+# 1. number of significant points (which must be in the right direction, ie stabilized compared to control) - 1 point each
+# 2. number of hits at middle three temperatures (50, 55, 60) - 1 point each
+# possibly other criteria (such as pvalue, fold change)
 
-df.stats.out <- df.stats %>%
-  select(-CTL, -NMN) %>% # remove list-column
-  as.data.frame()
+df.ranked <- df.significant %>%
+  group_by(PG.ProteinAccessions, PG.Genes) %>%
+  filter(Temperature %in% c(50, 55, 60)) %>% # keep data at middle three temperatures (50, 55, 60)
+  mutate(N = sum(Significant=="yes")) %>% # count number of significant hits at middle three temperatures
+  mutate(Rank = Number.Significant.Points + N) %>% # calculate Rank
+  select(PG.ProteinAccessions, PG.Genes, Number.Significant.Points, Rank) %>%
+  unique() %>%
+  arrange(desc(Rank)) # descending by rank - best at the top
+
+# add rank to the full data set 
+df.stats <- df.stats %>%
+  left_join(df.ranked %>% select(PG.ProteinAccessions, PG.Genes, Rank), by=c("PG.ProteinAccessions", "PG.Genes")) %>%
+  mutate(Rank = ifelse(is.na(Rank), 0, Rank)) %>% # change missing Rank from NA to 0
+  arrange(desc(Rank)) # descending by rank - best at the top
+
+# add rank to reduced data set
+df.stats.reduced <- df.stats.reduced %>%
+  left_join(df.ranked %>% select(PG.ProteinAccessions, PG.Genes, Rank), by=c("PG.ProteinAccessions", "PG.Genes")) %>%
+  mutate(Rank = ifelse(is.na(Rank), 0, Rank)) %>% # change missing Rank from NA to 0
+  arrange(desc(Rank)) # descending by rank - best at the top
+
+# add rank to statistically significant protein data
+df.significant <- df.significant %>%
+  left_join(df.ranked %>% select(PG.ProteinAccessions, PG.Genes, Rank), by=c("PG.ProteinAccessions", "PG.Genes")) %>%
+  arrange(desc(Rank)) # descending by rank - best at the top
+#------------------------------------------------------------------------------------
+
+
+# #------------------------------------------------------------------------------------
+# # prepare for writing out and plotting
+# 
+# # remove list-columns and convert to data frame - this makes writing out easier
+# df.stats.sig <- df.stats.sig %>%
+#   select(-CTL, -NMN) %>% # remove list-column
+#   as.data.frame()
+# 
+# df.stats.out <- df.stats %>%
+#   select(-CTL, -NMN) %>% # remove list-column
+#   as.data.frame()
+# #------------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------------
+# create summary
+
+# # protein level summary
+# df.summary <- df.stats.reduced %>%
+#   select(PG.ProteinAccessions, PG.Genes, Number.Significant.Points) %>%
+#   unique() %>%
+#   group_by(Number.Significant.Points) %>%
+#   summarise(Number.of.Proteins = n()) %>% # calculate count
+#   arrange(desc(Number.Significant.Points)) %>% # descending significance
+#   ungroup()
+
+# protein level summary
+df.summary <- df.stats.reduced %>%
+  select(PG.ProteinAccessions, PG.Genes, Rank) %>%
+  unique() %>%
+  group_by(Rank) %>%
+  summarise(Number.of.Proteins = n()) %>% # calculate count for each rank
+  arrange(desc(Rank)) %>% # descending significance
+  ungroup()
 #------------------------------------------------------------------------------------
 
 
@@ -230,29 +294,36 @@ df.stats.out <- df.stats %>%
 
 # full dataset
 # statistically significant proteins
-write_xlsx(list("All" = df.stats.out, "Significant Hits" = df.stats.sig), path = "CETSA_Individual_Temperature_significant_proteins.xlsx")
+write_xlsx(list("Significant Proteins" = df.significant, # significant proteins
+                "All Proteins" = df.stats.reduced, # all proteins
+                "Summary" = df.summary), path = "CETSA_Individual_Temperature_significant_proteins.xlsx")
 #------------------------------------------------------------------------------------
 
 
 #------------------------------------------------------------------------------------
-# plot
+# plot all significant proteins
 
 # define temperatures - for the x-axis
-temps <- df.stats.sig %>%
+temps <- df.significant %>%
   pull(Temperature) %>%
   unique() %>%
   as.numeric() # convert to numeric
 
-#inititate PDF
-pdf(file="CETSA_Individual_Temperature_Significant_test.pdf")
+# define ranked protein order
+ranked.proteins <- df.significant %>%
+  pull(PG.ProteinAccessions) %>%
+  unique() 
+
+# inititate PDF
+pdf(file="CETSA_Individual_Temperature_Significant_Proteins_test.pdf")
 par(mfrow=c(2,3))
 
-for(i in seq_along(unique(df.stats.sig$PG.ProteinAccessions))){
-  # subset data for specific gene 
-  df.loop <- df.stats.sig %>%
-    filter(PG.ProteinAccessions==sig.proteins[i])
+for(i in seq_along(unique(df.significant$PG.ProteinAccessions))){
+  # grab data for specific protein 
+  df.loop <- df.significant %>%
+    filter(PG.ProteinAccessions==ranked.proteins[i])
   
-  # plot grid
+  # initiate plot
   plot(0, xlim=c(min(temps), max(temps)),
        ylim=c(0, max(c(df.loop$AVG.CONTROL, df.loop$AVG.NMN))*1.4), 
        xlab=expression("Temperature " (degree*C)), 
@@ -269,32 +340,19 @@ for(i in seq_along(unique(df.stats.sig$PG.ProteinAccessions))){
   lines(x=df.loop$Temperature %>% unique(), y=df.loop$AVG.NMN %>% unique(), col="red") # treatment - red
   
   # flag the significant data points
-  significant.points.indx <- which(df.loop$Pvalue < Pvalue.threshold) # grab indeces for where to flag data with asterisk
+  significant.points.indeces <- which(df.loop$Pvalue < Pvalue.threshold & df.loop$Ratio > 1) # grab indeces for where to flag data with asterisk
   # add flags
-  points(x=temps[significant.points.indx], 
-         y=rep(max(df.loop$AVG.CONTROL[significant.points.indx], df.loop$AVG.NMN[significant.points.indx])*1.15, length=length(significant.points.indx)),
+  points(x=temps[significant.points.indeces], 
+         y=rep(max(df.loop$AVG.CONTROL[significant.points.indeces], df.loop$AVG.NMN[significant.points.indeces])*1.15, length=length(significant.points.indeces)),
          pch=8) # add significance flags (asterisks)
   
   # legend
-  legend("topleft", legend=c("Treatment", "Control"), col=c("Red", "Blue"), lty = 1:1, cex=0.8)
+  legend("topleft", legend=c("CTL", "NMN"), col=c("Blue", "Red"), lty = 1:1, cex=0.8)
 } #end for loop
 # mtext(date(), side=2, line=0, adj=0) # side (1=bottom, 2=left, 3=top, 4=right) # timestamp
 graphics.off()
 #------------------------------------------------------------------------------------
 
-
-#------------------------------------------------------------------------------------
-# summarize key points for each protein
-# need to improve this...
-
-df.test <- df.stats.sig %>%
-  select(PG.ProteinAccessions, PG.Genes, Temperature, Pvalue, T.value, Number.Significant.Points) %>%
-  unique()
-
-df.test.2 <- df.stats.sig %>%
-  select(PG.ProteinAccessions, PG.Genes, Number.Significant.Points) %>%
-  unique()
-#------------------------------------------------------------------------------------
 
 # #------------------------------------------------------------------------------------
 # # Qvalue 
@@ -309,4 +367,4 @@ df.test.2 <- df.stats.sig %>%
 # #------------------------------------------------------------------------------------
 
 
-# END
+# END 
