@@ -55,6 +55,9 @@ df.input$R.FileName %>% unique() %>% length()
 
 # candidates file
 df.candidates <- read.csv("//bigrock/GibsonLab/users/birgit/Barecia/BRC4_CDK/21_0325_BRC4_V1/Spectronaut/20210325_174612_210325_BRC4_all files_V1/Candidates.tsv", sep="\t", stringsAsFactors = FALSE)
+
+# human proteome from uniprot
+df.human <- read.table("//bigrock/GibsonLab/users/Cameron/UniProt/Human/uniprot-proteome UP000005640.tab", sep="\t", stringsAsFactors = FALSE, header=TRUE, fill=TRUE)
 #------------------------------------------------------------------------------------
 
 
@@ -249,6 +252,23 @@ df.stats.reduced <- df.stats.reduced %>%
 df.significant <- df.significant %>%
   left_join(df.ranked %>% select(PG.ProteinAccessions, PG.Genes, Rank), by=c("PG.ProteinAccessions", "PG.Genes")) %>%
   arrange(desc(Rank)) # descending by rank - best at the top
+#------------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------------
+# add attributes from human proteome from uniprot
+
+df.stats.reduced <- df.stats.reduced %>%
+  left_join(df.human %>%
+              mutate(NCHAR = nchar(Protein.names)) %>%
+              filter(NCHAR < 32760) %>% # exclude entries with too many characters in one cell since this will overload excel
+              select(Entry, Status, Protein.names, Gene.names, Organism), by=c("PG.ProteinAccessions"="Entry"))
+
+df.significant <- df.significant %>%
+  left_join(df.human %>% 
+              mutate(NCHAR = nchar(Protein.names)) %>%
+              filter(NCHAR < 32760) %>% # exclude entries with too many characters in one cell since this will overload excel
+              select(Entry, Status, Protein.names, Gene.names, Organism), by=c("PG.ProteinAccessions"="Entry"))
 #------------------------------------------------------------------------------------
 
 
