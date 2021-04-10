@@ -11,6 +11,7 @@
 # i. processed excel workbook with multiple sheets
 # ii. plots of melting curves in ranked order
 
+
 ### Begin Script ###
 
 #------------------------------------------------------------------------------------
@@ -55,9 +56,6 @@ df.input$R.FileName %>% unique() %>% length()
 
 # candidates file
 df.candidates <- read.csv("//bigrock/GibsonLab/users/birgit/Barecia/BRC4_CDK/21_0325_BRC4_V1/Spectronaut/20210325_174612_210325_BRC4_all files_V1/Candidates.tsv", sep="\t", stringsAsFactors = FALSE)
-
-# human proteome from uniprot
-df.human <- read.table("//bigrock/GibsonLab/users/Cameron/UniProt/Human/uniprot-proteome UP000005640.tab", sep="\t", stringsAsFactors = FALSE, header=TRUE, fill=TRUE)
 #------------------------------------------------------------------------------------
 
 
@@ -222,102 +220,98 @@ df.significant <- df.stats.reduced %>%
 #------------------------------------------------------------------------------------
 # rank the significant hits
 
-# rank according to the following criteria, in this order below: 
+# score according to the following criteria, in this order below: 
 # 1. number of significant points (which must be in the right direction, ie stabilized compared to control) - 1 point each
 # 2. number of hits at middle three temperatures (50, 55, 60) - 1 point each
-# possibly other criteria (such as pvalue, fold change)
 
+# first calcualte score
 df.ranked <- df.significant %>%
   group_by(PG.ProteinAccessions, PG.Genes) %>%
   filter(Temperature %in% c(50, 55, 60)) %>% # keep data at middle three temperatures (50, 55, 60)
   mutate(N = sum(Significant=="yes")) %>% # count number of significant hits at middle three temperatures
-  mutate(Rank = Number.Significant.Points + N) %>% # calculate Rank
-  select(PG.ProteinAccessions, PG.Genes, Number.Significant.Points, Rank) %>%
+  mutate(Score = Number.Significant.Points + N) # calculate score
+
+# calculate and order by rank
+df.ranked <- df.ranked %>%
+  mutate(Rank = max(df.ranked$Score)-Score+1) %>% # calculate rank (so lower is better which is a convention of sorts)
+  select(PG.ProteinAccessions, PG.Genes, Number.Significant.Points, Score, Rank) %>%
   unique() %>%
-  arrange(desc(Rank)) # descending by rank - best at the top
+  arrange(Rank) # ascending by rank - best at the top
 
 # add rank to the full data set 
 df.stats <- df.stats %>%
   left_join(df.ranked %>% select(PG.ProteinAccessions, PG.Genes, Rank), by=c("PG.ProteinAccessions", "PG.Genes")) %>%
-  mutate(Rank = ifelse(is.na(Rank), 0, Rank)) %>% # change missing Rank from NA to 0
-  arrange(desc(Rank)) # descending by rank - best at the top
+  mutate(Rank = ifelse(is.na(Rank), max(df.ranked$Rank)+1, Rank)) %>% # fill in missing Rank from NA to one above the max
+  arrange(Rank) # descending by rank - best at the top
 
 # add rank to reduced data set
 df.stats.reduced <- df.stats.reduced %>%
   left_join(df.ranked %>% select(PG.ProteinAccessions, PG.Genes, Rank), by=c("PG.ProteinAccessions", "PG.Genes")) %>%
-  mutate(Rank = ifelse(is.na(Rank), 0, Rank)) %>% # change missing Rank from NA to 0
-  arrange(desc(Rank)) # descending by rank - best at the top
+  mutate(Rank = ifelse(is.na(Rank), max(df.ranked$Rank)+1, Rank)) %>% # fill in missing Rank from NA to one above the max
+  arrange(Rank) # descending by rank - best at the top
 
 # add rank to statistically significant protein data
 df.significant <- df.significant %>%
   left_join(df.ranked %>% select(PG.ProteinAccessions, PG.Genes, Rank), by=c("PG.ProteinAccessions", "PG.Genes")) %>%
-  arrange(desc(Rank)) # descending by rank - best at the top
+  arrange(Rank) # ascending by rank - best at the top
 #------------------------------------------------------------------------------------
 
 
 #------------------------------------------------------------------------------------
-# add attributes from human proteome from uniprot
+# add description attributes to output files
 
-df.stats.reduced <- df.stats.reduced %>%
-  left_join(df.human %>%
-              mutate(NCHAR = nchar(Protein.names)) %>%
-              filter(NCHAR < 32760) %>% # exclude entries with too many characters in one cell since this will overload excel
-              select(Entry, Status, Protein.names, Gene.names, Organism), by=c("PG.ProteinAccessions"="Entry"))
+# add attributes from candidates file
+df.stats.reduced.out <- df.stats.reduced %>%
+  left_join(df.candidates.clean %>%
+              select(UniProtIds, ProteinNames, ProteinDescriptions, Genes, Organisms, GO.Biological.Process, GO.Molecular.Function, GO.Cellular.Component), by=c("PG.ProteinAccessions"="UniProtIds")) %>%
+  unique() %>%
+  select(Rank, PG.ProteinAccessions, ProteinDescriptions, everything())
 
-df.significant <- df.significant %>%
-  left_join(df.human %>% 
-              mutate(NCHAR = nchar(Protein.names)) %>%
-              filter(NCHAR < 32760) %>% # exclude entries with too many characters in one cell since this will overload excel
-              select(Entry, Status, Protein.names, Gene.names, Organism), by=c("PG.ProteinAccessions"="Entry"))
+# add attributes from candidates file
+df.significant.out <- df.significant %>%
+  left_join(df.candidates.clean %>%
+              select(UniProtIds, ProteinNames, ProteinDescriptions, Genes, Organisms, GO.Biological.Process, GO.Molecular.Function, GO.Cellular.Component), by=c("PG.ProteinAccessions"="UniProtIds")) %>%
+  unique() %>%
+  select(Rank, PG.ProteinAccessions, ProteinDescriptions, everything())
 #------------------------------------------------------------------------------------
 
 
-# #------------------------------------------------------------------------------------
-# # prepare for writing out and plotting
-# 
-# # remove list-columns and convert to data frame - this makes writing out easier
-# df.stats.sig <- df.stats.sig %>%
-#   select(-CTL, -NMN) %>% # remove list-column
-#   as.data.frame()
-# 
-# df.stats.out <- df.stats %>%
-#   select(-CTL, -NMN) %>% # remove list-column
-#   as.data.frame()
-# #------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------
+# create protein summary
+
+df.protein.summary <- df.significant.out %>%
+  select(Rank, PG.ProteinAccessions, ProteinDescriptions, PG.Genes, Number.Significant.Points, GO.Biological.Process, GO.Molecular.Function, GO.Cellular.Component, Organisms) %>%
+  unique() %>%
+  arrange(Rank) # best at top
+#------------------------------------------------------------------------------------
 
 
 #------------------------------------------------------------------------------------
-# create summary
+# create overall summary
 
-# # protein level summary
-# df.summary <- df.stats.reduced %>%
-#   select(PG.ProteinAccessions, PG.Genes, Number.Significant.Points) %>%
-#   unique() %>%
-#   group_by(Number.Significant.Points) %>%
-#   summarise(Number.of.Proteins = n()) %>% # calculate count
-#   arrange(desc(Number.Significant.Points)) %>% # descending significance
-#   ungroup()
-
-# protein level summary
 df.summary <- df.stats.reduced %>%
   select(PG.ProteinAccessions, PG.Genes, Rank) %>%
   unique() %>%
   group_by(Rank) %>%
   summarise(Number.of.Proteins = n()) %>% # calculate count for each rank
-  arrange(desc(Rank)) %>% # descending significance
-  ungroup()
+  arrange(Rank) %>% # best at top
+  ungroup() %>%
+  select(Rank, Number.of.Proteins)
 #------------------------------------------------------------------------------------
 
 
 #------------------------------------------------------------------------------------
-# write out
+# write out results
 
 # full dataset
 # statistically significant proteins
-write_xlsx(list("Significant Proteins" = df.significant, # significant proteins
-                "All Proteins" = df.stats.reduced, # all proteins
-                "Summary" = df.summary), path = "CETSA_Individual_Temperature_significant_proteins.xlsx")
+write_xlsx(list("Summary" = df.summary, # overall summary
+                "Protein Summary" = df.protein.summary, # protein level summary
+                "Significant Proteins" = df.significant.out, # significant proteins
+                "All Proteins" = df.stats.reduced.out), # all proteins
+           path = "CETSA_Individual_Temperature_significant_proteins.xlsx")
 #------------------------------------------------------------------------------------
+
 
 
 #------------------------------------------------------------------------------------
