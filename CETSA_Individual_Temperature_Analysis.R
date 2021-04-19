@@ -184,7 +184,7 @@ Pvalue.threshold <- 0.05
 # reduce observations and calculate number of significant data points
 df.stats.reduced <- df.stats %>%
   # boil down observations
-  select(PG.ProteinAccessions, PG.Genes, Temperature, T.value, AVG.CONTROL, AVG.NMN, Pvalue, Ratio) %>%
+  select(PG.ProteinAccessions, PG.Genes, Temperature, AVG.CONTROL, AVG.NMN, Ratio, T.value, Pvalue) %>%
   unique() %>%
   # determine significant yes/no for each observation
   mutate(Significant = ifelse(Pvalue < Pvalue.threshold & Ratio > 1, "yes", "no")) %>%
