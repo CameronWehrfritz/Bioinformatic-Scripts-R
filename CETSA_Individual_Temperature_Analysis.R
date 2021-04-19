@@ -218,13 +218,44 @@ df.significant <- df.stats.reduced %>%
 
 
 #------------------------------------------------------------------------------------
+# identify two types of melting curves: sigmoidal and non-sigmoidal
+# based on the control group
+# sigmoidal = last two temperature points both have a relative abundance less than 1
+# non-sigmoidal = last two temperature points have a relative abundance greater than or equal to 1
+# these are of course only approximating the sigmoidal curve, since it doesn't explicitly check the earlier temperature points
+
+# yes or no sigmoidal curve?
+df.significant <- df.significant %>%
+  group_by(PG.ProteinAccessions) %>%
+  # is the relative abundance of the control group less than 1 at the last two temperature points?
+  mutate(Sigmoidal = ifelse(Temperature==65 | Temperature==70,  #
+                            ifelse(AVG.CONTROL<1, "yes", "no"), "no check")) %>%
+  # are either of the last points non-sigmoidal? if so, the protein is not sigmoidal
+  mutate(Sigmoidal = ifelse("no" %in% Sigmoidal, "no", "yes")) %>% # yes or no sigmoidal curve?
+  ungroup()
+
+# sigmoidal proteins
+sigmoidal.proteins <- df.significant %>%
+  filter(Sigmoidal == "yes") %>%
+  pull(PG.ProteinAccessions) %>%
+  unique()
+
+# non-sigmoidal proteins
+nonsigmoidal.proteins <- df.significant %>%
+  filter(Sigmoidal == "no") %>%
+  pull(PG.ProteinAccessions) %>%
+  unique()
+#------------------------------------------------------------------------------------                            
+
+
+#------------------------------------------------------------------------------------
 # rank the significant hits
 
 # score according to the following criteria, in this order below: 
 # 1. number of significant points (which must be in the right direction, ie stabilized compared to control) - 1 point each
 # 2. number of hits at middle three temperatures (50, 55, 60) - 1 point each
 
-# first calcualte score
+# first calculate score
 df.ranked <- df.significant %>%
   group_by(PG.ProteinAccessions, PG.Genes) %>%
   filter(Temperature %in% c(50, 55, 60)) %>% # keep data at middle three temperatures (50, 55, 60)
@@ -233,7 +264,7 @@ df.ranked <- df.significant %>%
 
 # calculate and order by rank
 df.ranked <- df.ranked %>%
-  mutate(Rank = max(df.ranked$Score)-Score+1) %>% # calculate rank (so lower is better which is a convention of sorts)
+  mutate(Rank = max(df.ranked$Score)-Score+1) %>% # calculate rank (so lower is better)
   select(PG.ProteinAccessions, PG.Genes, Number.Significant.Points, Score, Rank) %>%
   unique() %>%
   arrange(Rank) # ascending by rank - best at the top
@@ -263,16 +294,16 @@ df.significant <- df.significant %>%
 # add attributes from candidates file
 df.stats.reduced.out <- df.stats.reduced %>%
   left_join(df.candidates.clean %>%
-              select(UniProtIds, ProteinNames, ProteinDescriptions, Genes, Organisms, GO.Biological.Process, GO.Molecular.Function, GO.Cellular.Component), by=c("PG.ProteinAccessions"="UniProtIds")) %>%
+              select(UniProtIds, ProteinDescriptions, Organisms, GO.Biological.Process, GO.Molecular.Function, GO.Cellular.Component), by=c("PG.ProteinAccessions"="UniProtIds")) %>%
   unique() %>%
-  select(Rank, PG.ProteinAccessions, ProteinDescriptions, everything())
+  select(Rank, PG.ProteinAccessions, PG.Genes, ProteinDescriptions, everything())
 
 # add attributes from candidates file
 df.significant.out <- df.significant %>%
   left_join(df.candidates.clean %>%
-              select(UniProtIds, ProteinNames, ProteinDescriptions, Genes, Organisms, GO.Biological.Process, GO.Molecular.Function, GO.Cellular.Component), by=c("PG.ProteinAccessions"="UniProtIds")) %>%
+              select(UniProtIds, ProteinDescriptions, Organisms, GO.Biological.Process, GO.Molecular.Function, GO.Cellular.Component), by=c("PG.ProteinAccessions"="UniProtIds")) %>%
   unique() %>%
-  select(Rank, PG.ProteinAccessions, ProteinDescriptions, everything())
+  select(Rank, PG.ProteinAccessions, PG.Genes, ProteinDescriptions, everything())
 #------------------------------------------------------------------------------------
 
 
@@ -280,9 +311,10 @@ df.significant.out <- df.significant %>%
 # create protein summary
 
 df.protein.summary <- df.significant.out %>%
-  select(Rank, PG.ProteinAccessions, ProteinDescriptions, PG.Genes, Number.Significant.Points, GO.Biological.Process, GO.Molecular.Function, GO.Cellular.Component, Organisms) %>%
+  select(Rank, Sigmoidal, PG.ProteinAccessions, PG.Genes, ProteinDescriptions, Number.Significant.Points, GO.Biological.Process, GO.Molecular.Function, GO.Cellular.Component, Organisms) %>%
   unique() %>%
-  arrange(Rank) # best at top
+  arrange(Rank) %>% # best rank at top
+  arrange(desc(Sigmoidal)) # sigmoidal at top
 #------------------------------------------------------------------------------------
 
 
@@ -307,6 +339,8 @@ df.summary <- df.stats.reduced %>%
 # statistically significant proteins
 write_xlsx(list("Summary" = df.summary, # overall summary
                 "Protein Summary" = df.protein.summary, # protein level summary
+                "Sigmoidal Protein Summary" = df.protein.summary %>% filter(PG.ProteinAccessions %in% sigmoidal.proteins), # protein level summary - sigmoidal curves
+                "Non-Sigmoidal Protein Summary" = df.protein.summary %>% filter(PG.ProteinAccessions %in% nonsigmoidal.proteins), # protein level summary - non-sigmoidal curves
                 "Significant Proteins" = df.significant.out, # significant proteins
                 "All Proteins" = df.stats.reduced.out), # all proteins
            path = "CETSA_Individual_Temperature_significant_proteins.xlsx")
@@ -315,7 +349,7 @@ write_xlsx(list("Summary" = df.summary, # overall summary
 
 
 #------------------------------------------------------------------------------------
-# plot all significant proteins
+# plot significant sigmoidal proteins
 
 # define temperatures - for the x-axis
 temps <- df.significant %>%
@@ -323,19 +357,71 @@ temps <- df.significant %>%
   unique() %>%
   as.numeric() # convert to numeric
 
-# define ranked protein order
-ranked.proteins <- df.significant %>%
-  pull(PG.ProteinAccessions) %>%
-  unique() 
+# sigmoidal proteins
+df.significant.sigmoidal <- df.significant %>%
+  filter(Sigmoidal == "yes") 
 
 # inititate PDF
-pdf(file="CETSA_Individual_Temperature_Significant_Proteins_test.pdf")
+pdf(file="CETSA_Individual_Temperature_Sigmoidal_Proteins_test.pdf")
 par(mfrow=c(2,3))
 
-for(i in seq_along(unique(df.significant$PG.ProteinAccessions))){
+for(i in seq_along(unique(df.significant.sigmoidal$PG.ProteinAccessions))){
   # grab data for specific protein 
-  df.loop <- df.significant %>%
-    filter(PG.ProteinAccessions==ranked.proteins[i])
+  df.loop <- df.significant.sigmoidal %>%
+    filter(PG.ProteinAccessions==sigmoidal.proteins[i])
+  
+  # initiate plot
+  plot(0, xlim=c(min(temps), max(temps)),
+       ylim=c(0, max(c(df.loop$AVG.CONTROL, df.loop$AVG.NMN))*1.4), 
+       xlab=expression("Temperature " (degree*C)), 
+       ylab="Relative Abundance", 
+       main=unique(df.loop$PG.Genes)
+  )
+  
+  # plot data points
+  points(x=df.loop$Temperature %>% unique(), y=df.loop$AVG.CONTROL %>% unique(), col="blue") # control - blue
+  points(x=df.loop$Temperature %>% unique(), y=df.loop$AVG.NMN %>% unique(), col="red") # treatment - red
+  
+  # add lines connecting the data points
+  lines(x=df.loop$Temperature %>% unique(), y=df.loop$AVG.CONTROL %>% unique(), col="blue") # control - blue
+  lines(x=df.loop$Temperature %>% unique(), y=df.loop$AVG.NMN %>% unique(), col="red") # treatment - red
+  
+  # flag the significant data points
+  significant.points.indeces <- which(df.loop$Pvalue < Pvalue.threshold & df.loop$Ratio > 1) # grab indeces for where to flag data with asterisk
+  # add flags
+  points(x=temps[significant.points.indeces], 
+         y=rep(max(df.loop$AVG.CONTROL[significant.points.indeces], df.loop$AVG.NMN[significant.points.indeces])*1.15, length=length(significant.points.indeces)),
+         pch=8) # add significance flags (asterisks)
+  
+  # legend
+  legend("topleft", legend=c("CTL", "NMN"), col=c("Blue", "Red"), lty = 1:1, cex=0.8)
+} #end for loop
+# mtext(date(), side=2, line=0, adj=0) # side (1=bottom, 2=left, 3=top, 4=right) # timestamp
+graphics.off()
+#------------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------------
+# plot significant non-sigmoidal proteins
+
+# define temperatures - for the x-axis
+temps <- df.significant %>%
+  pull(Temperature) %>%
+  unique() %>%
+  as.numeric() # convert to numeric
+
+# sigmoidal proteins
+df.significant.nonsigmoidal <- df.significant %>%
+  filter(Sigmoidal == "no") 
+
+# inititate PDF
+pdf(file="CETSA_Individual_Temperature_NonSigmoidal_Proteins_test.pdf")
+par(mfrow=c(2,3))
+
+for(i in seq_along(unique(df.significant.nonsigmoidal$PG.ProteinAccessions))){
+  # grab data for specific protein 
+  df.loop <- df.significant.nonsigmoidal %>%
+    filter(PG.ProteinAccessions==nonsigmoidal.proteins[i])
   
   # initiate plot
   plot(0, xlim=c(min(temps), max(temps)),
