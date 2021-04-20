@@ -458,6 +458,15 @@ graphics.off()
 #------------------------------------------------------------------------------------
 
 
+#------------------------------------------------------------------------------------
+# temperature point summary
+df.temperature.summary <- df.ranked %>%
+  group_by(Number.Significant.Points) %>%
+  summarise(COUNT = n()) %>% # how many proteins per group
+  arrange(desc(Number.Significant.Points)) # descending order
+#------------------------------------------------------------------------------------
+
+
 # #------------------------------------------------------------------------------------
 # # Qvalue 
 # 
