@@ -187,8 +187,35 @@ df.statistics <- df.statistics %>%
 
 
 #------------------------------------------------------------------------------------
+# add description attributes to output files
+
+# Protein Level
+df.protein.level.out <- df.statistics %>%
+  left_join(df.candidates.clean %>%
+              select(UniProtIds, ProteinDescriptions, GO.Biological.Process, GO.Molecular.Function, GO.Cellular.Component, Organisms), by=c("ProteinAccessions"="UniProtIds")) %>%
+  unique() %>%
+  select(ProteinAccessions, Genes, ProteinDescriptions, everything()) 
+
+# Area Under Curve
+df.auc.out <- df.auc %>%
+  left_join(df.candidates.clean %>%
+              select(UniProtIds, ProteinDescriptions, GO.Biological.Process, GO.Molecular.Function, GO.Cellular.Component, Organisms), by=c("PG.ProteinAccessions"="UniProtIds")) %>%
+  unique() %>%
+  select(PG.ProteinAccessions, PG.Genes, ProteinDescriptions, everything()) 
+
+# Total Fragment Group Quantities
+df.out <- df %>%
+  left_join(df.candidates.clean %>%
+              select(UniProtIds, ProteinDescriptions, GO.Biological.Process, GO.Molecular.Function, GO.Cellular.Component, Organisms), by=c("PG.ProteinAccessions"="UniProtIds")) %>%
+  unique() %>%
+  select(PG.ProteinAccessions, PG.Genes, ProteinDescriptions, everything()) 
+#------------------------------------------------------------------------------------
+
+
+
+#------------------------------------------------------------------------------------
 # write out statistics, area under curve and total.fg.quantity tables
-write.xlsx(list(df.statistics, df.auc, df), "Table_statistics_results.xlsx")
+write.xlsx(list(df.protein.level.out, df.auc.out, df.out), "CETSA_AUC_Results.xlsx")
 #------------------------------------------------------------------------------------
 
 
@@ -350,27 +377,18 @@ graphics.off()
 #------------------------------------------------------------------------------------
 
 
-#------------------------------------------------------------------------------------
-# what is up with replicate 3?
-df.test <- df %>%
-  filter(R.Replicate==3)
 
-df.test %>% pull(Temperature) %>% unique()
-# replicate 3 only has measurements at three temperatures
-#------------------------------------------------------------------------------------
-
-
-#------------------------------------------------------------------------------------
-# Qvalue 
-
-qobj <- qvalue(p = df.statistics$Pvalue)
-pi0 <- qobj$pi0
-
-#adjust pvalues
-padj <- p.adjust(p = df.statistics$Pvalue, method=c("BH"), n = length(df.statistics$Pvalue))
-hist(padj, breaks=100)
-unique(padj)
-#------------------------------------------------------------------------------------
+# #------------------------------------------------------------------------------------
+# # Qvalue 
+# 
+# qobj <- qvalue(p = df.statistics$Pvalue)
+# pi0 <- qobj$pi0
+# 
+# #adjust pvalues
+# padj <- p.adjust(p = df.statistics$Pvalue, method=c("BH"), n = length(df.statistics$Pvalue))
+# hist(padj, breaks=100)
+# unique(padj)
+# #------------------------------------------------------------------------------------
 
 
 # END 
