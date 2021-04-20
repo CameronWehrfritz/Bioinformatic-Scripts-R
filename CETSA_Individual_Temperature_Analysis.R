@@ -296,14 +296,18 @@ df.stats.reduced.out <- df.stats.reduced %>%
   left_join(df.candidates.clean %>%
               select(UniProtIds, ProteinDescriptions, Organisms, GO.Biological.Process, GO.Molecular.Function, GO.Cellular.Component), by=c("PG.ProteinAccessions"="UniProtIds")) %>%
   unique() %>%
-  select(Rank, PG.ProteinAccessions, PG.Genes, ProteinDescriptions, everything())
+  select(Rank, PG.ProteinAccessions, PG.Genes, ProteinDescriptions, everything()) %>%
+  relocate(Organisms, .after=last_col())
+
 
 # add attributes from candidates file
 df.significant.out <- df.significant %>%
   left_join(df.candidates.clean %>%
               select(UniProtIds, ProteinDescriptions, Organisms, GO.Biological.Process, GO.Molecular.Function, GO.Cellular.Component), by=c("PG.ProteinAccessions"="UniProtIds")) %>%
   unique() %>%
-  select(Rank, Sigmoidal, PG.ProteinAccessions, PG.Genes, ProteinDescriptions, everything())
+  select(Rank, Sigmoidal, PG.ProteinAccessions, PG.Genes, ProteinDescriptions, everything()) %>%
+  relocate(Organisms, .after=last_col())
+
 #------------------------------------------------------------------------------------
 
 
