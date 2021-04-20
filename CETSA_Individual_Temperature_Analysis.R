@@ -233,18 +233,6 @@ df.significant <- df.significant %>%
   # are either of the last points non-sigmoidal? if so, the protein is not sigmoidal
   mutate(Sigmoidal = ifelse("no" %in% Sigmoidal, "no", "yes")) %>% # yes or no sigmoidal curve?
   ungroup()
-
-# sigmoidal proteins
-sigmoidal.proteins <- df.significant %>%
-  filter(Sigmoidal == "yes") %>%
-  pull(PG.ProteinAccessions) %>%
-  unique()
-
-# non-sigmoidal proteins
-nonsigmoidal.proteins <- df.significant %>%
-  filter(Sigmoidal == "no") %>%
-  pull(PG.ProteinAccessions) %>%
-  unique()
 #------------------------------------------------------------------------------------                            
 
 
@@ -361,9 +349,15 @@ temps <- df.significant %>%
   unique() %>%
   as.numeric() # convert to numeric
 
-# sigmoidal proteins
+# sigmoidal protein data
 df.significant.sigmoidal <- df.significant %>%
   filter(Sigmoidal == "yes") 
+
+# sigmoidal proteins - in order for plotting
+sigmoidal.proteins <- df.significant %>%
+  filter(Sigmoidal == "yes") %>%
+  pull(PG.ProteinAccessions) %>%
+  unique()
 
 # inititate PDF
 pdf(file="CETSA_Individual_Temperature_Sigmoidal_Proteins_test.pdf")
@@ -414,9 +408,15 @@ temps <- df.significant %>%
   unique() %>%
   as.numeric() # convert to numeric
 
-# sigmoidal proteins
+# non-sigmoidal protein data
 df.significant.nonsigmoidal <- df.significant %>%
   filter(Sigmoidal == "no") 
+
+# non-sigmoidal proteins - in order for plotting
+nonsigmoidal.proteins <- df.significant %>%
+  filter(Sigmoidal == "no") %>%
+  pull(PG.ProteinAccessions) %>%
+  unique()
 
 # inititate PDF
 pdf(file="CETSA_Individual_Temperature_NonSigmoidal_Proteins_test.pdf")
