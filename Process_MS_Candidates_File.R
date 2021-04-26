@@ -331,7 +331,7 @@ saveWorkbook(wb, file = output.filename, overwrite = TRUE)
 
 
 #------------------------------------------------------------------------------------
-# calculate number of proteins by condition
+# calculate number of proteins by condition and by direction
 df.grouped.all <- df %>%
   filter(Number.of.Unique.Total.Peptides > 1) %>% # filter for at least 2 unique peptides per protein - exclude one peptide wonders
   select(Comparison..group1.group2., AVG.Log2.Ratio) %>%
