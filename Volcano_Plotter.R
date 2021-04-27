@@ -59,15 +59,15 @@ with(subset(data, Qvalue<Qvalue.threshold & AVG.Log2.Ratio < -log2.ratio.thresho
 # add red colored points for significantly upregulated proteins 
 with(subset(data, Qvalue<Qvalue.threshold & AVG.Log2.Ratio > log2.ratio.threshold ), points(AVG.Log2.Ratio, -log10(Qvalue), pch=20, col="red"))
 
-# label significantly dysregulated proteins with textxy function from {calibrate}
-# nB m=(x,y) is the origin, and should be chosen specifically to be the location of a good location/a certain protein's coordinates
-# so that the labels are legible (as they fan out away from the origin)
-# with(subset(data, Qvalue<Qvalue.threshold & Absolute.AVG.Log2.Ratio > log2.ratio.threshold), textxy(AVG.Log2.Ratio, -log10(Qvalue), labs=Genes, cex=0.75))
-
 # add significance threshold lines
 abline(h=-log10(Qvalue.threshold), lty=2)
 abline(v=log2.ratio.threshold, lty=2)
 abline(v=-log2.ratio.threshold, lty=2)
+
+# label significantly dysregulated proteins with textxy function from {calibrate}
+# nB m=(x,y) is the origin, and should be chosen specifically to be the location of a good location/a certain protein's coordinates
+# so that the labels are legible (as they fan out away from the origin)
+# with(subset(data, Qvalue<Qvalue.threshold & Absolute.AVG.Log2.Ratio > log2.ratio.threshold), textxy(AVG.Log2.Ratio, -log10(Qvalue), labs=Genes, cex=0.75))
 
 # how many observations in each group? SIGNIFICANT UP, SIGNIFICANT DOWN or NOT SIGNIFICANT
 data.summary <- data %>%
