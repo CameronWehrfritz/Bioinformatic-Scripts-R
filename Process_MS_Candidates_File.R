@@ -60,7 +60,8 @@ df <- df.input %>%
          AVG.Log2.Ratio, Qvalue, Absolute.AVG.Log2.Ratio,
          GO.Biological.Process, GO.Molecular.Function, GO.Cellular.Component, 
          everything()) %>% # all other variables follow
-  arrange(Qvalue) # arrange by Qvalue, ascending
+  arrange(Qvalue) %>% # arrange by Qvalue, ascending
+  filter(Number.of.Unique.Total.Peptides>2) # exclude one peptide wonders
 #------------------------------------------------------------------------------------
 
 
