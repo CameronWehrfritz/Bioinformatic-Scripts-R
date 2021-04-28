@@ -312,6 +312,9 @@ for(i in unique(df$Comparison..group1.group2.)){
 # RENAME THE SHEETS
 # optional
 
+# print names
+names(wb)
+
 # names(wb) <- c("All proteins", "Sheet 2", "Sheet 3", "etc...")
 #-----------------------------------------------------------------------------------------------------
 
