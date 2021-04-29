@@ -293,13 +293,13 @@ for(i in unique(df$Comparison..group1.group2.)){
   # change comparison name slightly for writing to excel file
   sheet.name <- paste(gsub("\\/", "vs", i), "All", sep=" ") # replace the slash division with 'vs'
   
-  # significantly altered proteins with at least 2 unique peptides for this specific comparison
-  df.sig <- df %>%
+  # all proteins with at least 2 unique peptides for this specific comparison
+  df.all <- df %>%
     filter(Comparison..group1.group2.==i) %>% # filter for specific comparison for this sheet
     filter(Number.of.Unique.Total.Peptides>1) # must have at least 2 unique peptides per protein
   
   addWorksheet(wb, sheet.name, gridLines = TRUE)
-  writeData(wb, sheet.name, df.sig, rowNames = FALSE)
+  writeData(wb, sheet.name, df.all, rowNames = FALSE)
   
   addStyle(wb, sheet.name, headerStyle, rows = 1, cols = 1:length(colnames(df)), gridExpand = TRUE)
   setColWidths(wb, sheet.name, cols=1:length(colnames(df)), widths = 10) # set all column widths to 10; more tailoring to come later
