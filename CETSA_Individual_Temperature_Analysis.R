@@ -325,22 +325,6 @@ df.summary <- df.stats.reduced %>%
 
 
 #------------------------------------------------------------------------------------
-# write out results
-
-# full dataset
-# statistically significant proteins
-write_xlsx(list("Summary" = df.summary, # overall summary
-                "Protein Summary" = df.protein.summary, # protein level summary
-                "Sigmoidal Protein Summary" = df.protein.summary %>% filter(PG.ProteinAccessions %in% sigmoidal.proteins), # protein level summary - sigmoidal curves
-                "Non-Sigmoidal Protein Summary" = df.protein.summary %>% filter(PG.ProteinAccessions %in% nonsigmoidal.proteins), # protein level summary - non-sigmoidal curves
-                "Significant Proteins" = df.significant.out, # significant proteins
-                "All Proteins" = df.stats.reduced.out), # all proteins
-           path = "CETSA_Individual_Temperature_significant_proteins.xlsx")
-#------------------------------------------------------------------------------------
-
-
-
-#------------------------------------------------------------------------------------
 # plot significant sigmoidal proteins
 
 # define temperatures - for the x-axis
@@ -464,6 +448,21 @@ df.temperature.summary <- df.ranked %>%
   group_by(Number.Significant.Points) %>%
   summarise(COUNT = n()) %>% # how many proteins per group
   arrange(desc(Number.Significant.Points)) # descending order
+#------------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------------
+# write out results
+
+# full dataset
+# statistically significant proteins
+write_xlsx(list("Summary" = df.summary, # overall summary
+                "Protein Summary" = df.protein.summary, # protein level summary
+                "Sigmoidal Protein Summary" = df.protein.summary %>% filter(PG.ProteinAccessions %in% sigmoidal.proteins), # protein level summary - sigmoidal curves
+                "Non-Sigmoidal Protein Summary" = df.protein.summary %>% filter(PG.ProteinAccessions %in% nonsigmoidal.proteins), # protein level summary - non-sigmoidal curves
+                "Significant Proteins" = df.significant.out, # significant proteins
+                "All Proteins" = df.stats.reduced.out), # all proteins
+           path = "CETSA_Individual_Temperature_significant_proteins.xlsx")
 #------------------------------------------------------------------------------------
 
 
