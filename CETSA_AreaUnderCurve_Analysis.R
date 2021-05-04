@@ -255,8 +255,8 @@ for(i in seq_along(proteins)){
     x <- df.loop %>% pull(Temperature) %>% unique()
     
     # split data by treatment group
-    df.first <- split(df.loop, df.loop$Treatment)[[1]] %>% mutate(COLOR = "red") # add color for plotting
-    df.second <- split(df.loop, df.loop$Treatment)[[2]] %>% mutate(COLOR = "blue") # add color for plotting
+    df.first <- split(df.loop, df.loop$Treatment)[[1]] %>% mutate(COLOR = "blue") # add color for plotting
+    df.second <- split(df.loop, df.loop$Treatment)[[2]] %>% mutate(COLOR = "red") # add color for plotting
     
     # define y-data by treatment group
     y_first <- df.first %>% pull(Total.FG.Quantity)
@@ -326,8 +326,8 @@ for(i in seq_along(proteins)){
   x <- df.loop %>% pull(Temperature) %>% unique()
   
   # split data by treatment group
-  df.first <- split(df.loop, df.loop$Treatment)[[1]] %>% mutate(COLOR = "red") # add color for plotting
-  df.second <- split(df.loop, df.loop$Treatment)[[2]] %>% mutate(COLOR = "blue") # add color for plotting
+  df.first <- split(df.loop, df.loop$Treatment)[[1]] %>% mutate(COLOR = "blue") # add color for plotting
+  df.second <- split(df.loop, df.loop$Treatment)[[2]] %>% mutate(COLOR = "red") # add color for plotting
   
   # define y-data by treatment group
   y_first <- df.first %>% pull(AVERAGE_TOTAL.FG.QUANTITY)
