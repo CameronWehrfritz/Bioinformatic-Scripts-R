@@ -343,7 +343,7 @@ saveWorkbook(wb, file = output.filename, overwrite = TRUE)
 #-----------------------------------------------------------------------------------------------------
 
 
-#------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------
 # calculate number of proteins by condition and by direction
 df.grouped.all <- df %>%
   filter(Number.of.Unique.Total.Peptides > 1) %>% # filter for at least 2 unique peptides per protein - exclude one peptide wonders
@@ -355,10 +355,10 @@ df.grouped.all <- df %>%
   mutate(COUNT_DIR = n()) %>%
   select(-AVG.Log2.Ratio) %>%
   unique()
-#------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------
 
 
-#------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------
 # calculate number of significantly changed proteins by condition and by direction
 df.grouped.sig <- df %>%
   filter(Number.of.Unique.Total.Peptides > 1) %>% # filter for at least 2 unique peptides per protein - exclude one peptide wonders
@@ -370,7 +370,7 @@ df.grouped.sig <- df %>%
   mutate(COUNT_SIG = n()) %>%
   select(-AVG.Log2.Ratio) %>%
   unique()
-#------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------
 
 
 # END
