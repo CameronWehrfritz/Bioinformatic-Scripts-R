@@ -240,7 +240,7 @@ sum(df$UniProtIds %in% df.pilot.unique$UniProtIds)
 
 # join - on the peptide sequence level (Birgit's suggestion ... seems to work better than joining on both protein and peptide)
 df <- df %>%
-  left_join(df.pilot.unique, by=c("Group")) %>%
+  left_join(df.pilot.unique %>% select(-UniProtIds), by="Group") %>% # drop UniProtIds since it already exists in df and we aren't joining by it here
   relocate(Cleavages, .after=PEP.PeptidePosition)
 
 # # join - by protein and peptide
