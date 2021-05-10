@@ -29,7 +29,7 @@ package.check <- lapply(packages, FUN = function(x) {
 
 #------------------------------------------------------------------------------------
 # load data
-data.input <- read_xlsx("//bigrock/GibsonLab/users/Cameron/2021_0222_EG5/Pathway_analysis/CPDB_output/EG5_Enriched_gene_ontology_based_sets_Downregulated_T5KO_DC_vs_T5K0_ND_ORA_results.xlsx", sheet=2)
+data.input <- read.xlsx("//bigrock/GibsonLab/users/Cameron/2021_0222_EG5/Pathway_analysis/CPDB_output/EG5_Enriched_gene_ontology_based_sets_Downregulated_T5KO_DC_vs_T5K0_ND_ORA_results.xlsx", sheet=2)
 #------------------------------------------------------------------------------------
 
 
