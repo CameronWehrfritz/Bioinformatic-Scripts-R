@@ -17,7 +17,7 @@ setwd("//bigrock/GibsonLab/users/Cameron/2021_0222_EG5/Pathway_analysis/R_worksp
 #------------------------------------------------------------------------------------
 # PACKAGES #
 
-packages = c("clusterProfiler", "AnnotationHub", "org.Hs.eg.db", "dplyr", )
+packages = c("clusterProfiler", "AnnotationHub", "org.Hs.eg.db", "dplyr")
 package.check <- lapply(packages, FUN = function(x) {
   if (!require(x, character.only = TRUE)) {
     install.packages(x, dependencies = TRUE)
