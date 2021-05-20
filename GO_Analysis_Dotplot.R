@@ -129,4 +129,11 @@ S.top # print plot to screen
 #------------------------------------------------------------------------------------
 
 
+#------------------------------------------------------------------------------------
+# write out results in excel table
+write.xlsx(list(df), "Table_Pathway_Analysis_output.xlsx")
+# write.xlsx(list(df.id.vs.ic, df.cd.vs.cc, df.id.vs.cd, df.ic.vs.cc), "Table_output.xlsx")
+#------------------------------------------------------------------------------------
+
+
 # END
