@@ -18,7 +18,7 @@ setwd("//bigrock/GibsonLab/users/Cameron/2021_0507_EG_PTM/2021_0507_EG7B/Pathway
 #------------------------------------------------------------------------------------
 # packages
 
-packages = c("clusterProfiler", "AnnotationHub", "org.Hs.eg.db", "purrr", "ggplot2", "dplyr", "openxlsx")
+packages = c("purrr", "ggplot2", "dplyr", "openxlsx")
 package.check <- lapply(packages, FUN = function(x) {
   if (!require(x, character.only = TRUE)) {
     install.packages(x, dependencies = TRUE)
