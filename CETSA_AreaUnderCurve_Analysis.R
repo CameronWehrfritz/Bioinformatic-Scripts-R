@@ -79,6 +79,30 @@ df.candidates <- df.candidates %>%
 
 
 #------------------------------------------------------------------------------------
+# clean data
+
+# candidates file
+df.candidates.clean <- df.candidates %>%
+  select(-contains("DEPRECATED")) %>% # drop DEPRECATED variables
+  select(-Valid) %>% # drop Valid variable
+  rename(Number.of.Ratios=X..of.Ratios, # rename these variables
+         Percent.Change=X..Change,
+         Number.of.Unique.Total.Peptides=X..Unique.Total.Peptides,
+         Number.of.Unique.Total.EG.Id=X..Unique.Total.EG.Id) %>%
+  separate(col = Condition.Numerator, into = c("Treatment.Numerator", "Temperature.Numerator"), sep="-") %>% # NUMERATOR treatment and temperature separated by dash
+  separate(col = Condition.Denominator, into = c("Treatment.Denominator", "Temperature.Denominator"), sep="-") %>% # DENOMINATOR treatment and temperature separated by dash
+  filter(Temperature.Numerator==Temperature.Denominator) %>% # keep comparisons at the same temperature
+  mutate(Temperature = Temperature.Numerator %>% as.numeric()) %>% # make temperature variable (should be same in numerator and denominator)
+  select(UniProtIds, Genes, # move these variables to the beginning 
+         ProteinGroups, ProteinNames, ProteinDescriptions,
+         Comparison..group1.group2., Temperature,
+         AVG.Log2.Ratio, Qvalue, Absolute.AVG.Log2.Ratio,
+         GO.Biological.Process, GO.Molecular.Function, GO.Cellular.Component,
+         everything()) 
+#------------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------------
 # prepare data
 
 # split treatment group and temperature from R.Condition variable
